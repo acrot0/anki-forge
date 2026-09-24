@@ -1,0 +1,44 @@
+{
+  "name": "anki-forge",
+  "version": "0.1.0",
+  "description": "Turn textbooks, lecture notes and handouts (PDF/Markdown/TXT) into Anki decks with any OpenAI-compatible LLM. Bring your own key.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acrot0/anki-forge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/acrot0/anki-forge/issues"
+  },
+  "homepage": "https://github.com/acrot0/anki-forge#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "anki-forge": "./src/cli.mjs"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "anki",
+    "flashcards",
+    "spaced-repetition",
+    "pdf",
+    "study",
+    "llm",
+    "ai",
+    "ankiconnect",
+    "exam-prep"
+  ],
+  "dependencies": {
+    "pdf-parse": "^1.1.1"
+  }
+}
