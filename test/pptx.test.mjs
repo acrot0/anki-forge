@@ -2,7 +2,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { deflateRawSync } from 'node:zlib';
 import { readZip } from '../src/zip.mjs';
-import { parsePptx } from '../src/parse.mjs';
+import { parsePptx, parseXlsx } from '../src/parse.mjs';
 
 /** Build a real ZIP byte-stream: deflate entries + central dir + EOCD. */
 function makeZip(entries) {
@@ -84,5 +84,23 @@ describe('parsePptx', () => {
 
   test('a zip with no slides reports the real problem', () => {
     assert.throws(() => parsePptx(makeZip([{ name: 'x.xml', data: Buffer.from('<x/>') }])), /no slides found/);
+  });
+
+  test('xlsx: shared strings and plain cells become term | definition rows', () => {
+    const xlsx = makeZip([
+      { name: 'xl/sharedStrings.xml', data: Buffer.from('<sst><si><t>abandon</t></si><si><t>to give up completely</t></si><si><t>brief</t></si></sst>') },
+      { name: 'xl/worksheets/sheet1.xml', data: Buffer.from(
+        '<worksheet><sheetData>' +
+        '<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1" t="s"><v>1</v></c></row>' +
+        '<row r="2"><c r="A2" t="s"><v>2</v></c><c r="B2"><v>42</v></c></row>' +
+        '</sheetData></worksheet>') },
+    ]);
+    const chunks = parseXlsx(xlsx);
+    assert.ok(chunks[0].text.includes('abandon | to give up completely'));
+    assert.ok(chunks[0].text.includes('brief | 42'));
+  });
+
+  test('xlsx: a workbook with no sheets reports the real problem', () => {
+    assert.throws(() => parseXlsx(makeZip([{ name: 'x.xml', data: Buffer.from('<x/>') }])), /no worksheets found/);
   });
 });

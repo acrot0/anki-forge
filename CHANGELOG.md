@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-09-25
+
+### Added
+
+- **Installer scripts** (`install.ps1` / `install.sh`) — download the
+  self-contained release binary into `~/.local/bin` without npm or Node.
+  npm is no longer the recommended path: npm 12 refuses `github:` and
+  remote-tarball installs by default (EALLOWREMOTE), and there is no npm
+  account behind this project.
+- **`.xlsx` support** — vocab lists and glossaries: one row per line, cells
+  joined with ` | `, shared strings and inline/numeric cells handled.
+- **Proxy hint on network failures** — "fetch failed" now explains how to
+  set `HTTPS_PROXY` instead of leaving an opaque error.
+- **Wizard retries** — a typo in provider/style/files is re-asked (3 tries)
+  instead of aborting after five answered questions.
+- **Bulk insert transaction** for .apkg writes — large decks build in
+  seconds instead of paying a fsync per note.
+
 ## [0.4.0] — 2026-09-25
 
 ### Added

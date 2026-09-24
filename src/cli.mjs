@@ -110,19 +110,33 @@ export async function wizard(argvIn, { rl = null } = {}) {
   try {
     console.log('anki-forge — study files → Anki deck. ENTER accepts the [suggestion].\n');
     const out = {};
-    out.files = String(await ask('File(s) to import (comma-separated, .pdf/.md/.txt)')).split(',').map((f) => f.trim()).filter(Boolean);
+    // Files and provider are re-asked on invalid input: dying after five
+    // questions because of one typo is the classic wizard failure.
+    for (let i = 0; i < 3; i++) {
+      out.files = String(await ask('File(s) to import (comma-separated, .pdf/.pptx/.docx/.xlsx/.md/.txt)')).split(',').map((f) => f.trim()).filter(Boolean);
+      if (out.files.length > 0) break;
+      console.log('  ! no files given — try again');
+    }
     if (out.files.length === 0) throw new Error('no files given');
     out.deck = await ask('Deck name ("::" nests)', 'Imported');
 
     const names = Object.keys(PROVIDERS);
     console.log(`  providers: ${names.join(', ')}`);
-    out.provider = (await ask('Provider', 'deepseek')).toLowerCase();
-    if (!PROVIDERS[out.provider]) throw new Error(`unknown provider "${out.provider}" — known: ${names.join(', ')}`);
+    for (let i = 0; i < 3; i++) {
+      out.provider = (await ask('Provider', 'deepseek')).toLowerCase();
+      if (PROVIDERS[out.provider]) break;
+      console.log(`  ! unknown provider — pick one of: ${names.join(', ')}`);
+    }
+    if (!PROVIDERS[out.provider]) throw new Error('too many invalid provider answers');
     out.model = await ask('Model', PROVIDERS[out.provider].hint);
     out.apiKey = await ask('API key (ENTER = $OPENAI_API_KEY)', process.env.OPENAI_API_KEY ?? '');
     if (!out.apiKey && !PROVIDERS[out.provider].keyless) throw new Error('no API key');
-    out.style = (await ask('Card style: basic = Q/A, cloze = fill-in-the-blank', 'basic')).toLowerCase();
-    if (!['basic', 'cloze'].includes(out.style)) throw new Error('card style must be basic or cloze');
+    for (let i = 0; i < 3; i++) {
+      out.style = (await ask('Card style: basic = Q/A, cloze = fill-in-the-blank', 'basic')).toLowerCase();
+      if (['basic', 'cloze'].includes(out.style)) break;
+      console.log('  ! style must be basic or cloze');
+    }
+    if (!['basic', 'cloze'].includes(out.style)) throw new Error('too many invalid style answers');
 
     const preview = (await ask('Preview cards first, write nothing yet (Y/n)', 'Y')).toLowerCase();
     const argv = toArgv({ ...out, dryRun: preview !== 'n' });

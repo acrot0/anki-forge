@@ -35,28 +35,21 @@ is exactly what a script gets wrong. anki-forge is the missing CLI:
 
 ## Install
 
-**Single executable** (no Node.js needed) — grab the file for your platform
-from the [latest release](https://github.com/acrot0/anki-forge/releases/latest):
+**Windows** — download [`anki-forge-windows-x64.exe`](https://github.com/acrot0/anki-forge/releases/latest/download/anki-forge-windows-x64.exe) (or run `install.ps1` from the repo, which also tells you the one-line PATH step). SmartScreen may warn: the build is unsigned.
+
+**Linux / macOS**:
 
 ```bash
-./anki-forge-windows-x64.exe            # Windows (SmartScreen may warn: unsigned)
-./anki-forge-linux-x64
-./anki-forge-macos-x64                  # Intel & Apple Silicon (Rosetta)
+curl -fL https://raw.githubusercontent.com/acrot0/anki-forge/main/install.sh | sh -
+# or review it first: it just downloads the release binary into ~/.local/bin
 ```
 
-**With Node.js ≥ 22.13**:
-
-```bash
-npx anki-forge                          # interactive wizard
-npx anki-forge import lecture.pdf --deck "Med::Cardio"
-```
-
-or `npm install -g anki-forge` (once published to npm).
+The binaries are **self-contained** — no Node.js, no npm account, no npm install. (npm users: recent npm refuses `github:` and remote-tarball installs by default, which is why npm is not the recommended path here.)
 
 ## Quick start
 
-The shortest path is the wizard — just run `anki-forge` (or `npx anki-forge`)
-in a terminal and answer the questions:
+The shortest path is the wizard — just run the binary (or `node src/cli.mjs`
+from a clone) in a terminal and answer the questions:
 
 ```
 $ anki-forge

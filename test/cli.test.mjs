@@ -84,17 +84,35 @@ describe('toArgv (wizard output)', () => {
 describe('wizard', () => {
   const answers = (...list) => {
     let i = 0;
-    return { question: async () => list[i++] };
+    return { question: async () => list[i++] ?? '' };
   };
 
-  test('unknown provider aborts without touching files', async () => {
-    const rl = answers('a.pdf', 'D', 'not-a-provider');
-    await assert.rejects(wizard([], { rl }), /unknown provider/);
+  test('unknown provider aborts after retries, listing the options each time', async () => {
+    const rl = answers('a.pdf', 'D', 'bad1', 'bad2', 'bad3');
+    await assert.rejects(wizard([], { rl }), /too many invalid provider answers/);
   });
 
   test('no files aborts early', async () => {
-    const rl = answers('');
-    await assert.rejects(wizard([], { rl }), /no files/);
+    const rl = answers('', '', '');
+    await assert.rejects(wizard([], { rl }), /no files given/);
+  });
+
+  test('a typo in provider is forgiven on the retry', async () => {
+    // provider fixed on retry; then the flow proceeds into main() which
+    // fails on the nonexistent file — a number exit code proves the wizard
+    // got all the way through its questions and handed off.
+    const rl = answers('a.md', 'D', 'deepseekk', 'deepseek', 'deepseek-chat', 'k', 'basic', 'n');
+    const errs = [];
+    const orig = console.error;
+    console.error = (m) => errs.push(m);
+    let code;
+    try {
+      code = await wizard([], { rl });
+    } finally {
+      console.error = orig;
+    }
+    assert.equal(typeof code, 'number', 'wizard must hand off to main and return its exit code');
+    assert.ok(errs.some((e) => String(e).includes('ENOENT')), 'flow must reach file parsing');
   });
 });
 
@@ -152,7 +170,7 @@ describe('main', () => {
     const orig = console.error;
     console.error = (m) => errs.push(m);
     try {
-      assert.equal(await main(['import', 'file.xlsx', '--deck', 'D']), 2);
+      assert.equal(await main(['import', 'file.ppt', '--deck', 'D']), 2);
     } finally {
       console.error = orig;
     }

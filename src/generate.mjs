@@ -132,6 +132,17 @@ async function pMapWithLimit(items, limit, worker) {
   return results;
 }
 
+/** Network-level failures deserve a proxy hint: most users behind national
+ *  firewalls hit exactly this and see an opaque "fetch failed". */
+function withNetHint(e) {
+  const msg = String(e?.message ?? e);
+  const code = String(e?.cause?.code ?? '');
+  if (/fetch failed|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|CERT/i.test(msg + ' ' + code)) {
+    return `${msg} — if your provider needs a proxy, set HTTPS_PROXY (e.g. http://127.0.0.1:7890) and retry`;
+  }
+  return msg;
+}
+
 /**
  * Generate cards for every chunk. Returns per-chunk stats so the caller can
  * show progress and the user can see exactly which section produced nothing.
@@ -189,7 +200,7 @@ export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = n
     done++;
     onProgress?.(done, chunks.length);
     if (rawCards === null) {
-      return { title: chunk.title, generated: 0, error: lastError?.message ?? 'no JSON array' };
+      return { title: chunk.title, generated: 0, error: withNetHint(lastError) ?? 'no JSON array' };
     }
     const limited = rawCards.slice(0, cfg.maxCardsPerChunk);
     const { cards, dropped, duplicates } = normalizeCards(limited, cfg.style);

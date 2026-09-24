@@ -81,7 +81,7 @@ export function parsePdfText(text, { maxChars = DEFAULT_MAX_CHARS } = {}) {
  */
 export async function parseFile(filePath, opts = {}) {
   const ext = path.extname(filePath).toLowerCase();
-  const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', '.docx', ''];
+  const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', '.docx', '.xlsx', ''];
   if (!supported.includes(ext)) {
     throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .pptx, .md or .txt`);
   }
@@ -110,6 +110,10 @@ export async function parseFile(filePath, opts = {}) {
   if (ext === '.docx') {
     const buf = await readFile(filePath);
     return { chunks: parseDocx(buf, opts), kind: 'docx' };
+  }
+  if (ext === '.xlsx') {
+    const buf = await readFile(filePath);
+    return { chunks: parseXlsx(buf, opts), kind: 'xlsx' };
   }
   const raw = await readFile(filePath, 'utf8');
   if (ext === '.md' || ext === '.markdown') return { chunks: parseMarkdown(raw, opts), kind: 'markdown' };
@@ -152,6 +156,54 @@ export function parsePptx(buf, opts = {}) {
     );
   }
   return chunks;
+}
+
+/**
+ * Spreadsheets (vocab lists, glossaries): one sheet row becomes one line,
+ * cells joined with " | " so term/definition pairs survive as a unit. Shared
+ * strings come from xl/sharedStrings.xml; inline strings and plain numbers
+ * are read straight from the cell.
+ */
+export function parseXlsx(buf, opts = {}) {
+  const entries = readZip(buf);
+  const shared = [];
+  const sst = entries.get('xl/sharedStrings.xml');
+  if (sst) {
+    for (const si of sst.toString('utf8').matchAll(/<si>([\s\S]*?)<\/si>/g)) {
+      shared.push([...si[1].matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((t) => decodeXml(t[1])).join(''));
+    }
+  }
+  const sheets = [...entries.keys()].filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
+  if (sheets.length === 0) throw new Error('no worksheets found — is this really a .xlsx file?');
+  const lines = [];
+  for (const [i, name] of sheets.entries()) {
+    const xml = entries.get(name).toString('utf8');
+    const rows = [...xml.matchAll(/<row[^>]*>([\s\S]*?)<\/row>/g)];
+    if (sheets.length > 1 && rows.length > 0) lines.push(`Sheet ${i + 1}`);
+    for (const row of rows) {
+      const cells = [...row[1].matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)].map((c) => {
+        // Attribute extraction must come from the captured attr string: a
+        // single regex with an optional t="..." group lets the greedy part
+        // swallow the attribute and every cell degrades to a string index.
+        const type = (c[1].match(/\bt="(\w+)"/) || [])[1];
+        const body = c[2];
+        if (type === 's') {
+          const v = body.match(/<v>([^<]*)<\/v>/);
+          return v ? decodeXml(shared[Number(v[1])] ?? '') : '';
+        }
+        const inline = body.match(/<is>[\s\S]*?<t[^>]*>([\s\S]*?)<\/t>/);
+        if (inline) return decodeXml(inline[1]);
+        const v = body.match(/<v>([^<]*)<\/v>/);
+        return v ? decodeXml(v[1]) : '';
+      }).filter((x) => x !== '');
+      if (cells.length > 0) lines.push(cells.join(' | '));
+    }
+  }
+  const text = lines.join('\n').trim();
+  if (text.length < 40) {
+    throw new Error('XLSX has almost no extractable text — empty workbook?');
+  }
+  return parseText(text, opts);
 }
 
 function decodeXml(s) {

@@ -189,17 +189,26 @@ export async function writeApkgBytes(cards, { deckName, style = 'basic' } = {}) 
 
   const insNote = db.prepare('INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (?, ?, ?, ?, -1, ?, ?, ?, ?, 0, \'\')');
   const insCard = db.prepare('INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?, ?, ?, 0, ?, -1, 0, 0, ?, 0, 0, 0, 0, 0, 0, 0, 0, \'\')');
-  cards.forEach((c, i) => {
-    const nid = nowMs + i;
-    const back = style === 'cloze' ? (c.back || '') : c.back;
-    const flds = `${c.front}\u001f${back}`;
-    const tags = [...(c.tags ?? [])].join(' ');
-    const csum = Number.parseInt(createHash('sha1').update(c.front).digest('hex').slice(0, 8), 16);
-    insNote.run(nid, newGuid(), mid, now, tags, flds, c.front, csum);
-    // due = i+1: new-card position in insertion order, mirroring what Anki
-    // does for fresh imports.
-    insCard.run(nowMs + 1_000_000 + i, nid, did, now, i + 1);
-  });
+  // One transaction for the whole batch: a thousand-card deck otherwise pays
+  // a fsync per row, which is the difference between seconds and minutes.
+  db.exec('BEGIN');
+  try {
+    cards.forEach((c, i) => {
+      const nid = nowMs + i;
+      const back = style === 'cloze' ? (c.back || '') : c.back;
+      const flds = `${c.front}\u001f${back}`;
+      const tags = [...(c.tags ?? [])].join(' ');
+      const csum = Number.parseInt(createHash('sha1').update(c.front).digest('hex').slice(0, 8), 16);
+      insNote.run(nid, newGuid(), mid, now, tags, flds, c.front, csum);
+      // due = i+1: new-card position in insertion order, mirroring what Anki
+      // does for fresh imports.
+      insCard.run(nowMs + 1_000_000 + i, nid, did, now, i + 1);
+    });
+    db.exec('COMMIT');
+  } catch (e) {
+    db.exec('ROLLBACK');
+    throw e;
+  }
 
   db.close();
   const anki2 = await readFile(dbPath);
