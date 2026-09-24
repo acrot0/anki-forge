@@ -232,7 +232,8 @@ Import options:
   --deck <name>            target deck, "::" nests ("Med::Cardio")   required
   --dry-run                generate and preview, write nothing
   --style basic|cloze      cloze generates {{c1::...}} fill-in cards (default basic)
-  --export <file>          write cards to a TSV file instead of Anki
+  --export <file>          export instead of writing to Anki: .apkg (shareable
+                           deck file) or any other name → Anki-importable TSV
   --no-cache               re-call the LLM even if this exact section is cached
   --max-cards-per-chunk N  cap per section (default 10)
   --language LANG          force card language, default follows the material
