@@ -141,6 +141,9 @@ export async function wizard(argvIn, { rl = null } = {}) {
 async function runImport(args) {
   if (!args.deck) throw new Error('import requires --deck <name> (use :: for nesting, e.g. "Med::Cardio")');
   if (args.files.length === 0) throw new Error('import requires at least one file (.pdf, .md, .txt)');
+  // Explicit flags must not be nulled out by absent ones: {...DEFAULTS, ...args}
+  // in generateCards would otherwise see style: null and reject it.
+  args.style = args.style ?? 'basic';
   applyProvider(args);
 
   const allChunks = [];

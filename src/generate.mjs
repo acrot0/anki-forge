@@ -139,7 +139,18 @@ async function pMapWithLimit(items, limit, worker) {
  * fires after each chunk settles, in completion order.
  */
 export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = null, onProgress = null } = {}) {
-  const cfg = { ...DEFAULTS, ...opts };
+  // Explicit per-field fallbacks, not {...DEFAULTS, ...opts}: a flag that was
+  // never passed arrives as null and would silently override the default
+  // (style: null, baseUrl: null — both burned us in 0.3.0).
+  const cfg = {
+    baseUrl: opts.baseUrl ?? DEFAULTS.baseUrl,
+    model: opts.model ?? DEFAULTS.model,
+    language: opts.language ?? DEFAULTS.language,
+    maxCardsPerChunk: opts.maxCardsPerChunk ?? DEFAULTS.maxCardsPerChunk,
+    style: opts.style ?? DEFAULTS.style,
+    concurrency: opts.concurrency ?? DEFAULTS.concurrency,
+    apiKey: opts.apiKey,
+  };
   if (!cfg.apiKey) throw new Error('no API key: pass --api-key or set OPENAI_API_KEY');
   if (!cfg.model) throw new Error('no model: pass --model (e.g. deepseek-chat, gpt-4o-mini, glm-4-flash)');
   if (!['basic', 'cloze'].includes(cfg.style)) throw new Error(`unknown card style "${cfg.style}" — use basic or cloze`);

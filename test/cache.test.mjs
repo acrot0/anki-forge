@@ -45,6 +45,17 @@ describe('generateCards + cache', () => {
     assert.equal(r2.perChunk[0].cached, true);
   });
 
+  test('null flags fall back to defaults instead of overriding them', async () => {
+    let hitUrl = '';
+    const fetchImpl = async (url) => {
+      hitUrl = url;
+      return ok('[{"front":"q","back":"a"}]')();
+    };
+    const { cards } = await generateCards(chunk, { apiKey: 'k', model: 'm', style: null, baseUrl: null, language: null, maxCardsPerChunk: null }, { fetchImpl });
+    assert.equal(cards.length, 1);
+    assert.ok(hitUrl.startsWith('https://api.openai.com/v1/'), `default baseUrl expected, got ${hitUrl}`);
+  });
+
   test('changing the model busts the cache', async () => {
     const memory = new Map();
     const cache = { get: (k) => memory.get(k), set: (k, v) => memory.set(k, v) };
