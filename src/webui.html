@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>anki-forge — 讲义变卡组</title>
+<style>
+  :root {
+    --brand1: #4f46e5; --brand2: #7c3aed;
+    --bg: #f6f7fb; --card: #ffffff; --ink: #1e2233; --sub: #6b7280;
+    --line: #e5e7eb; --ok: #059669; --warn: #d97706; --err: #dc2626;
+    --radius: 14px; --shadow: 0 1px 3px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); min-height: 100vh;
+    background-image: radial-gradient(circle at 15% -10%, #e0e7ff 0%, transparent 45%), radial-gradient(circle at 90% -10%, #ede9fe 0%, transparent 40%);
+  }
+  header { max-width: 1100px; margin: 0 auto; padding: 28px 20px 8px; display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--brand1), var(--brand2));
+          display: grid; place-items: center; color: #fff; font-size: 20px; box-shadow: var(--shadow); }
+  h1 { font-size: 20px; font-weight: 700; } h1 small { font-weight: 400; color: var(--sub); font-size: 13px; margin-left: 8px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 20px 60px; display: grid; grid-template-columns: 5fr 6fr; gap: 20px; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  .panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
+  .panel h2 { font-size: 14px; color: var(--sub); font-weight: 600; letter-spacing: .4px; margin-bottom: 14px; text-transform: uppercase; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
+  input[type=text], input[type=password], input[type=number], select {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+    font-size: 14px; background: #fafafa; transition: border .15s, box-shadow .15s; outline: none;
+  }
+  input:focus, select:focus { border-color: var(--brand1); box-shadow: 0 0 0 3px #e0e7ff; background: #fff; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .drop {
+    border: 2px dashed #c7d2fe; border-radius: var(--radius); padding: 34px 16px; text-align: center;
+    color: var(--sub); cursor: pointer; transition: all .18s; background: #fafaff;
+  }
+  .drop:hover, .drop.over { border-color: var(--brand1); background: #eef2ff; color: var(--brand1); }
+  .drop .big { font-size: 30px; margin-bottom: 6px; }
+  .drop input { display: none; }
+  .files { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .filechip { display: flex; justify-content: space-between; align-items: center; background: #eef2ff; color: #3730a3;
+              padding: 8px 12px; border-radius: 9px; font-size: 13px; }
+  .filechip .meta { color: #6366f1; font-size: 12px; }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #f3f4f6; border-radius: 10px; padding: 4px; gap: 4px; }
+  .seg button { border: 0; background: transparent; padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--sub); }
+  .seg button.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; cursor: pointer;
+    background: linear-gradient(135deg, var(--brand1), var(--brand2)); color: #fff; font-size: 15px; font-weight: 600;
+    padding: 13px 22px; border-radius: 11px; width: 100%; margin-top: 18px; transition: transform .1s, opacity .15s;
+  }
+  .btn:hover { transform: translateY(-1px); } .btn:disabled { opacity: .5; cursor: default; transform: none; }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); font-size: 14px; padding: 10px 16px; width: auto; }
+  .btn.ghost:hover { border-color: var(--brand1); color: var(--brand1); }
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  .hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
+  .statusbox { margin-top: 14px; font-size: 13px; }
+  .bar { height: 10px; background: #eef2f7; border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--brand1), var(--brand2)); transition: width .3s; }
+  .barwrap { display: flex; align-items: center; gap: 10px; }
+  .pct { font-size: 13px; font-weight: 700; color: var(--brand1); min-width: 44px; text-align: right; }
+  .chunks { margin-top: 10px; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+  .chunkline { font-size: 12px; color: var(--sub); display: flex; gap: 8px; align-items: baseline; }
+  .chunkline .t { color: var(--ink); font-weight: 600; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cards { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 420px; overflow-y: auto; }
+  .card3 { border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; background: #fcfcff; }
+  .card3 .q { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
+  .card3 .a { font-size: 13px; color: #374151; border-top: 1px dashed var(--line); padding-top: 6px; }
+  .card3 .tags { margin-top: 6px; } .card3 .tags span {
+    font-size: 11px; background: #eef2ff; color: #4f46e5; border-radius: 6px; padding: 2px 7px; margin-right: 4px; }
+  .banner { margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px; display: none; }
+  .banner.err { background: #fef2f2; color: var(--err); display: block; }
+  .banner.ok { background: #ecfdf5; color: var(--ok); display: block; }
+  .ankiline { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--sub); }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: #9ca3af; } .dot.ok { background: var(--ok); } .dot.bad { background: var(--err); }
+  .empty { color: #9ca3af; text-align: center; padding: 60px 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚒</div>
+  <h1>anki-forge<small>讲义、教材、单词表 → Anki 卡组</small></h1>
+</header>
+<main>
+  <section class="panel">
+    <h2>1 · 选择材料</h2>
+    <div class="drop" id="drop">
+      <div class="big">📂</div>
+      <div><b>拖拽文件到这里</b>，或点击选择</div>
+      <div class="hint">支持 PDF / PPTX / DOCX / XLSX / MD / TXT，可多选</div>
+      <input type="file" id="file" multiple accept=".pdf,.pptx,.docx,.xlsx,.md,.markdown,.txt">
+    </div>
+    <div class="files" id="files"></div>
+
+    <h2 style="margin-top:22px">2 · 设置</h2>
+    <label>目标牌组（:: 分级）</label>
+    <input type="text" id="deck" placeholder="考研::政治">
+    <div class="row">
+      <div><label>服务商</label><select id="provider"></select></div>
+      <div><label>模型</label><input type="text" id="model" placeholder="deepseek-chat"></div>
+    </div>
+    <label>API Key</label>
+    <input type="password" id="key" placeholder="仅本次使用，不落盘">
+    <label>卡片类型</label>
+    <div class="seg" id="style">
+      <button data-v="basic" class="on">问答卡</button>
+      <button data-v="cloze">填空卡 (Cloze)</button>
+    </div>
+    <div class="row">
+      <div><label>每节最多卡片数</label><input type="number" id="maxcards" value="10" min="1" max="50"></div>
+      <div><label>并发数</label><input type="number" id="conc" value="4" min="1" max="12"></div>
+    </div>
+    <button class="btn" id="go">⚡ 生成卡片</button>
+    <div class="hint">生成使用本地缓存：同一材料重跑不再计费。API Key 只在内存中使用，不做任何存储。</div>
+  </section>
+
+  <section class="panel">
+    <h2>3 · 结果</h2>
+    <div id="result">
+      <div class="empty">还没有生成任务<br><br>左侧选好文件和设置，点「生成卡片」</div>
+    </div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+let FILES = [];      // [{name, dataBase64}]
+let STYLE = 'basic';
+let JOB = null;      // {id, total}
+let POLL = null;
+
+// providers
+fetch('/api/providers').then(r => r.json()).then(p => {
+  $('provider').innerHTML = Object.entries(p).map(([k, v]) =>
+    `<option value="${k}">${k}（${v.hint}）</option>`).join('');
+  $('provider').onchange = () => { $('model').value = p[$('provider').value].hint; };
+  $('provider').onchange();
+});
+
+// anki connectivity dot
+fetch('/api/check').then(r => r.json()).then(c => {
+  const dot = document.createElement('div');
+  dot.className = 'ankiline';
+  dot.innerHTML = `<span class="dot ${c.ok ? 'ok' : 'bad'}"></span>` +
+    (c.ok ? `Anki 已连接（协议 v${c.version}）— 可直接写入牌组`
+          : 'Anki 未运行 — 仍可导出 .apkg 文件导入');
+  document.querySelector('header').after(dot);
+});
+
+// drop zone
+const drop = $('drop');
+drop.onclick = () => $('file').click();
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+$('file').onchange = (e) => addFiles(e.target.files);
+function addFiles(list) {
+  for (const f of list) {
+    const r = new FileReader();
+    r.onload = () => {
+      FILES.push({ name: f.name, dataBase64: r.result.split(',')[1], bytes: f.size });
+      renderFiles();
+    };
+    r.readAsDataURL(f);
+  }
+}
+function renderFiles() {
+  $('files').innerHTML = FILES.map((f, i) =>
+    `<div class="filechip"><span>${f.name}</span><span class="meta">${(f.bytes/1024).toFixed(0)} KB
+     <a href="#" onclick="FILES.splice(${i},1);renderFiles();return false" style="color:#ef4444"> ✕</a></span></div>`).join('');
+}
+
+// style segment
+$('style').onclick = (e) => {
+  if (e.target.dataset.v) {
+    STYLE = e.target.dataset.v;
+    for (const b of $('style').children) b.classList.toggle('on', b === e.target);
+  }
+};
+
+$('go').onclick = async () => {
+  if (FILES.length === 0) return banner('请先选择至少一个文件', 'err');
+  const deck = $('deck').value.trim() || 'Imported';
+  if (!$('key').value.trim()) return banner('请填写 API Key（服务商控制台获取）', 'err');
+  $('go').disabled = true;
+  banner('');
+  showProgress();
+  try {
+    let combined = null;
+    for (const f of FILES) {
+      const res = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          name: f.name, dataBase64: f.dataBase64, deck,
+          provider: $('provider').value, model: $('model').value.trim(),
+          apiKey: $('key').value.trim(), style: STYLE,
+          maxCards: +$('maxcards').value, concurrency: +$('conc').value,
+        }) });
+      const j = await res.json();
+      if (j.error) throw new Error(j.error);
+      // multiple files: merge jobs by running the last one as the poll target
+      combined = j;
+    }
+    JOB = combined;
+    POLL = setInterval(poll, 900);
+  } catch (e) {
+    banner(e.message, 'err');
+    $('go').disabled = false;
+  }
+};
+
+async function poll() {
+  if (!JOB) return;
+  const j = await (await fetch('/api/job/' + JOB.id)).json();
+  const pct = j.total ? Math.round(j.done / j.total * 100) : 0;
+  $('bar').style.width = pct + '%';
+  $('pct').textContent = pct + '%';
+  $('chunklist').innerHTML = (j.perChunk || []).map(c =>
+    `<div class="chunkline"><span>${c.error ? '⚠️' : c.cached ? '⚡' : '✅'}</span>
+     <span class="t">${c.title || '(未命名)'}</span>
+     <span>${c.error ? c.error : c.generated + ' 张' + (c.cached ? '（缓存）' : '')}</span></div>`).join('');
+  if (j.status === 'error') { clearInterval(POLL); $('go').disabled = false; return banner(j.error, 'err'); }
+  if (j.status !== 'done') return;
+  clearInterval(POLL);
+  $('go').disabled = false;
+  renderCards(j);
+}
+
+function renderCards(j) {
+  const n = j.cards.length;
+  $('result').innerHTML =
+    `<div class="banner ok">生成完成：${n} 张卡片（${j.done}/${j.total} 节）</div>
+     <div class="barwrap" style="margin-top:12px"><div class="bar" style="flex:1"><i style="width:100%"></i></div><span class="pct">100%</span></div>
+     <div class="actions">
+       <button class="btn ghost" id="dl">⬇ 下载 .apkg</button>
+       <button class="btn ghost" id="tsv">导出 TSV</button>
+       <button class="btn ghost" id="toanki">＋ 写入 Anki</button>
+     </div>
+     <div id="ankiresult"></div>
+     <div class="cards">${j.cards.map(c =>
+       `<div class="card3"><div class="q">${esc(c.front)}</div><div class="a">${esc(c.back) || '<i style="color:#9ca3af">（无补充）</i>'}</div>
+        ${c.tags && c.tags.length ? `<div class="tags">${c.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>`).join('')}
+     </div>`;
+  $('dl').onclick = () => download('apkg');
+  $('tsv').onclick = () => download('tsv');
+  $('toanki').onclick = async () => {
+    try {
+      const r = await (await fetch('/api/anki', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ jobId: JOB.id, deck: $('deck').value.trim() }) })).json();
+      $('ankiresult').innerHTML = r.error
+        ? `<div class="banner err">${esc(r.error)}</div>`
+        : `<div class="banner ok">已写入 Anki：新增 ${r.added} 张，跳过重复 ${r.duplicates} 张</div>`;
+    } catch (e) { $('ankiresult').innerHTML = `<div class="banner err">${esc(e.message)}</div>`; }
+  };
+}
+
+async function download(fmt) {
+  const r = await fetch('/api/export', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jobId: JOB.id, format: fmt }) });
+  if (!r.ok) { const e = await r.json(); return banner(e.error, 'err'); }
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ($('deck').value.trim() || 'anki-forge') + (fmt === 'apkg' ? '.apkg' : '.txt');
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function showProgress() {
+  $('result').innerHTML =
+    `<div class="banner ok" style="display:block">生成中…</div>
+     <div class="barwrap" style="margin-top:12px"><div class="bar" style="flex:1"><i id="bar"></i></div><span class="pct" id="pct">0%</span></div>
+     <div class="chunks" id="chunklist"></div>`;
+}
+function banner(msg, cls) {
+  const b = document.createElement('div');
+  b.className = 'banner ' + (cls || '');
+  b.textContent = msg;
+  b.style.display = msg ? 'block' : 'none';
+  $('result').prepend(b);
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+</script>
+</body>
+</html>

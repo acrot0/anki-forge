@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-09-25
+
+### Added
+
+- **Graphical UI** (`anki-forge ui`) — a local web app embedded in the
+  binary: drag files in, pick a provider, watch per-chunk progress, preview
+  every generated card, then download the .apkg, write to Anki, or export
+  TSV — no terminal literacy required. Loopback-only, zero new dependencies,
+  and it shares the exact generation path and cache with the CLI.
+
 ## [0.5.0] — 2026-09-25
 
 ### Added

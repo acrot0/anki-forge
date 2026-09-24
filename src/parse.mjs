@@ -81,41 +81,47 @@ export function parsePdfText(text, { maxChars = DEFAULT_MAX_CHARS } = {}) {
  */
 export async function parseFile(filePath, opts = {}) {
   const ext = path.extname(filePath).toLowerCase();
+  // Check before reading: an unsupported extension should not surface as a
+  // misleading ENOENT when the file also doesn't exist.
+  if (!['.pdf', '.md', '.markdown', '.txt', '.pptx', '.docx', '.xlsx', ''].includes(ext)) {
+    throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .pptx, .docx, .xlsx, .md or .txt`);
+  }
+  const buf = await readFile(filePath);
+  return parseBuffer(ext, buf, { name: path.basename(filePath), ...opts });
+}
+
+/**
+ * Parse an in-memory file (web UI uploads). Ext-based dispatch is shared with
+ * parseFile so both paths stay honest about the same supported set.
+ */
+export async function parseBuffer(ext, buf, opts = {}) {
+  const name = opts.name ?? 'upload';
+  ext = ext.toLowerCase();
   const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', '.docx', '.xlsx', ''];
   if (!supported.includes(ext)) {
-    throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .pptx, .md or .txt`);
+    throw new Error(`unsupported file type "${ext}" (${name}) — use .pdf, .pptx, .docx, .xlsx, .md or .txt`);
   }
   if (ext === '.pdf') {
     const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const buf = await readFile(filePath);
     let data;
     try {
       data = await pdfParse(buf);
     } catch (e) {
-      throw new Error(`could not parse PDF ${filePath}: ${e.message}`);
+      throw new Error(`could not parse PDF ${name}: ${e.message}`);
     }
     const text = (data.text || '').trim();
     if (text.length < MIN_CHARS) {
       throw new Error(
-        `${filePath}: PDF has no usable text layer (${text.length} chars extracted) — ` +
+        `${name}: PDF has no usable text layer (${text.length} chars extracted) — ` +
           'it is most likely a scan. OCR it first; anki-forge does not OCR.',
       );
     }
     return { chunks: parsePdfText(text, opts), kind: 'pdf' };
   }
-  if (ext === '.pptx') {
-    const buf = await readFile(filePath);
-    return { chunks: parsePptx(buf, opts), kind: 'pptx' };
-  }
-  if (ext === '.docx') {
-    const buf = await readFile(filePath);
-    return { chunks: parseDocx(buf, opts), kind: 'docx' };
-  }
-  if (ext === '.xlsx') {
-    const buf = await readFile(filePath);
-    return { chunks: parseXlsx(buf, opts), kind: 'xlsx' };
-  }
-  const raw = await readFile(filePath, 'utf8');
+  if (ext === '.pptx') return { chunks: parsePptx(buf, opts), kind: 'pptx' };
+  if (ext === '.docx') return { chunks: parseDocx(buf, opts), kind: 'docx' };
+  if (ext === '.xlsx') return { chunks: parseXlsx(buf, opts), kind: 'xlsx' };
+  const raw = buf.toString('utf8');
   if (ext === '.md' || ext === '.markdown') return { chunks: parseMarkdown(raw, opts), kind: 'markdown' };
   return { chunks: parseText(raw, opts), kind: 'text' };
 }

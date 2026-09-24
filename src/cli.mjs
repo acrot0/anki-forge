@@ -19,6 +19,7 @@ import { loadCache } from './cache.mjs';
 import { writeApkgBytes } from './apkg.mjs';
 import { parseFile } from './parse.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
+import { startUi } from './webui.mjs';
 
 export const DEFAULT_ANKI_URL = 'http://127.0.0.1:8765';
 
@@ -45,7 +46,7 @@ export function parseArgs(argv, env = process.env) {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const val = () => argv[++i];
-    if (a === 'import' || a === 'check') out.command = a;
+    if (a === 'import' || a === 'check' || a === 'ui') out.command = a;
     else if (a === '--deck') out.deck = val();
     else if (a === '--dry-run') out.dryRun = true;
     else if (a === '--interactive' || a === '-i') out.interactive = true;
@@ -241,7 +242,8 @@ async function runCheck(args) {
 
 const HELP = `anki-forge — turn textbooks and lecture notes into Anki decks, with your own LLM key.
 
-  anki-forge                               interactive wizard
+  anki-forge ui          图形界面 / graphical UI (opens in your browser)
+  anki-forge             interactive wizard in the terminal
   anki-forge import <file...> --deck <name> [options]
   anki-forge check
 
@@ -293,6 +295,11 @@ export async function main(argv = process.argv.slice(2), env = process.env, { rl
     return 2;
   }
   try {
+    if (args.command === 'ui') {
+      const { url } = await startUi({ open: !args.dryRun });
+      console.log(`anki-forge UI running at ${url} — Ctrl+C to stop`);
+      return new Promise(() => {}); // serve until interrupted
+    }
     return args.command === 'check' ? await runCheck(args) : await runImport(args);
   } catch (e) {
     console.error(`error: ${e.message}`);

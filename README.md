@@ -48,8 +48,12 @@ The binaries are **self-contained** — no Node.js, no npm account, no npm insta
 
 ## Quick start
 
-The shortest path is the wizard — just run the binary (or `node src/cli.mjs`
-from a clone) in a terminal and answer the questions:
+**The graphical way** — run `anki-forge ui`: a local page where you drag files in,
+pick a provider from a dropdown, watch per-chunk progress live, preview every card,
+and download the .apkg or write straight into Anki with one click. Nothing leaves
+your machine except the requests to your chosen LLM provider.
+
+**The terminal way** — run the binary with no arguments for an interactive wizard, or:
 
 ```
 $ anki-forge
