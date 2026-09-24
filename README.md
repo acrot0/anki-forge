@@ -95,8 +95,24 @@ anki-forge check        # is Anki reachable? is the key set?
 | `--base-url URL` / `--model NAME` / `--api-key KEY` | generation endpoint |
 | `--anki-url URL` | default `http://127.0.0.1:8765` |
 
-Files: `.pdf` (text layer), `.md`, `.txt`. Markdown headings become section
-boundaries; in plain text and PDF, section titles are detected by shape.
+Files: `.pdf` (text layer), `.pptx` (text runs; one chunk per slide), `.md`,
+`.txt`. Markdown headings become section boundaries; in plain text and PDF,
+section titles are detected by shape.
+
+## Beyond import
+
+```bash
+anki-forge import slides.pptx --deck "Course::Week1" --style cloze   # fill-in-the-blank cards
+anki-forge import textbook.pdf --deck "Exam" --export deck.txt       # TSV, no Anki needed
+```
+
+- **Cloze cards** (`--style cloze`) use Anki's built-in Cloze notetype; the
+  generator only emits cards with a real `{{c1::...}}` marker.
+- **`--export` writes TSV** (front ⇥ back ⇥ tags) — import it on mobile, share
+  it, or diff it in git before it ever touches your deck.
+- **Responses are cached** under `~/.anki-forge/` keyed by content, so
+  re-running a lecture with different filters costs nothing. The cache file
+  contains card text extracted from your material; delete it to forget.
 
 ## How it treats your material (and your money)
 

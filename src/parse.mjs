@@ -13,6 +13,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { readZip } from './zip.mjs';
 
 export const DEFAULT_MAX_CHARS = 3000;
 export const MIN_CHARS = 200;
@@ -80,8 +81,9 @@ export function parsePdfText(text, { maxChars = DEFAULT_MAX_CHARS } = {}) {
  */
 export async function parseFile(filePath, opts = {}) {
   const ext = path.extname(filePath).toLowerCase();
-  if (ext !== '.pdf' && ext !== '.md' && ext !== '.markdown' && ext !== '.txt' && ext !== '') {
-    throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .md or .txt`);
+  const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', ''];
+  if (!supported.includes(ext)) {
+    throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .pptx, .md or .txt`);
   }
   if (ext === '.pdf') {
     const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
@@ -101,7 +103,58 @@ export async function parseFile(filePath, opts = {}) {
     }
     return { chunks: parsePdfText(text, opts), kind: 'pdf' };
   }
+  if (ext === '.pptx') {
+    const buf = await readFile(filePath);
+    return { chunks: parsePptx(buf, opts), kind: 'pptx' };
+  }
   const raw = await readFile(filePath, 'utf8');
   if (ext === '.md' || ext === '.markdown') return { chunks: parseMarkdown(raw, opts), kind: 'markdown' };
   return { chunks: parseText(raw, opts), kind: 'text' };
+}
+
+/** Slide N ordering is numeric, not lexical — slide10 comes after slide9. */
+export function parsePptx(buf, opts = {}) {
+  const entries = readZip(buf);
+  const slideNames = [...entries.keys()]
+    .filter((n) => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+    .sort((a, b) => Number(a.match(/(\d+)/)[1]) - Number(b.match(/(\d+)/)[1]));
+  if (slideNames.length === 0) {
+    throw new Error('no slides found — is this really a .pptx file?');
+  }
+  // Each slide is a chunk: a page is the natural section of a deck, and the
+  // generic size-based merge below would blend adjacent slides and overwrite
+  // their titles (slides are usually shorter than MIN_CHARS).
+  const maxChars = opts.maxChars ?? DEFAULT_MAX_CHARS;
+  const chunks = [];
+  let extracted = 0;
+  for (const [i, name] of slideNames.entries()) {
+    const xml = entries.get(name).toString('utf8');
+    const texts = [...xml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g)].map((m) => decodeXml(m[1].trim())).filter(Boolean);
+    if (texts.length === 0) continue;
+    extracted += texts.join('').length;
+    const hasTitle = texts[0].length <= 60;
+    const title = hasTitle ? texts[0] : `Slide ${i + 1}`;
+    const body = (hasTitle ? texts.slice(1) : texts).join('\n').trim();
+    const parts = body.length > maxChars
+      ? packLines(body.split(/\r?\n/), maxChars, pdfTitle)
+      : [{ title: body ? title : null, text: body }];
+    for (const p of parts) {
+      if (p.text) chunks.push({ title: hasTitle ? title : p.title, text: p.text });
+    }
+  }
+  if (extracted < 40) {
+    throw new Error(
+      `PPTX has almost no extractable text (${extracted} chars) — image-only slides need OCR; anki-forge does not OCR.`,
+    );
+  }
+  return chunks;
+}
+
+function decodeXml(s) {
+  return s
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
 }

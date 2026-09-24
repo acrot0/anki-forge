@@ -11,9 +11,11 @@
  * 2 = usage or environment error.
  */
 import readline from 'node:readline/promises';
+import { writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { checkConnection, ensureDeck, addCards } from './anki.mjs';
 import { generateCards } from './generate.mjs';
+import { loadCache } from './cache.mjs';
 import { parseFile } from './parse.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
 
@@ -29,6 +31,9 @@ export function parseArgs(argv, env = process.env) {
     maxCardsPerChunk: null,
     language: null,
     provider: null,
+    style: null,
+    exportFile: null,
+    noCache: false,
     baseUrl: env.OPENAI_BASE_URL ?? null,
     model: env.OPENAI_MODEL ?? null,
     apiKey: env.OPENAI_API_KEY ?? null,
@@ -46,6 +51,9 @@ export function parseArgs(argv, env = process.env) {
     else if (a === '--max-cards-per-chunk') out.maxCardsPerChunk = Number(val());
     else if (a === '--language') out.language = val();
     else if (a === '--provider') out.provider = val();
+    else if (a === '--style') out.style = val();
+    else if (a === '--export') out.exportFile = val();
+    else if (a === '--no-cache') out.noCache = true;
     else if (a === '--base-url') out.baseUrl = val();
     else if (a === '--model') out.model = val();
     else if (a === '--api-key') out.apiKey = val();
@@ -76,6 +84,9 @@ export function toArgv(args) {
   if (args.model) argv.push('--model', args.model);
   if (args.apiKey) argv.push('--api-key', args.apiKey);
   if (args.language) argv.push('--language', args.language);
+  if (args.style) argv.push('--style', args.style);
+  if (args.exportFile) argv.push('--export', args.exportFile);
+  if (args.noCache) argv.push('--no-cache');
   if (args.ankiUrl !== DEFAULT_ANKI_URL) argv.push('--anki-url', args.ankiUrl);
   return argv;
 }
@@ -107,6 +118,8 @@ export async function wizard(argvIn, { rl = null } = {}) {
     out.model = await ask('Model', PROVIDERS[out.provider].hint);
     out.apiKey = await ask('API key (ENTER = $OPENAI_API_KEY)', process.env.OPENAI_API_KEY ?? '');
     if (!out.apiKey && !PROVIDERS[out.provider].keyless) throw new Error('no API key');
+    out.style = (await ask('Card style: basic = Q/A, cloze = fill-in-the-blank', 'basic')).toLowerCase();
+    if (!['basic', 'cloze'].includes(out.style)) throw new Error('card style must be basic or cloze');
 
     const preview = (await ask('Preview cards first, write nothing yet (Y/n)', 'Y')).toLowerCase();
     const argv = toArgv({ ...out, dryRun: preview !== 'n' });
@@ -138,12 +151,25 @@ async function runImport(args) {
     return 1;
   }
 
-  console.error(`  generating cards with ${args.model} (${args.dryRun ? 'dry run — nothing written' : 'will write to Anki'})...`);
-  const { cards, perChunk } = await generateCards(allChunks, args);
+  console.error(`  ${allChunks.length} chunks → up to ${allChunks.length} LLM calls`);
+  const cache = args.noCache ? null : await loadCache();
+  const { cards, perChunk } = await generateCards(allChunks, args, { cache });
+  if (cache) await cache.save();
   summarize(perChunk, 'generation');
+  const cachedCount = perChunk.filter((c) => c.cached).length;
+  if (cachedCount > 0) console.error(`  ${cachedCount} of ${allChunks.length} chunks served from cache (no cost)`);
   if (cards.length === 0) {
     console.error('the model produced no usable cards — check --model and the material');
     return 1;
+  }
+
+  if (args.exportFile) {
+    const tsv = cards
+      .map((c) => [c.front, c.back, [...args.tags, ...c.tags].join(' ')].join('\t'))
+      .join('\n');
+    await writeFile(args.exportFile, tsv, 'utf8');
+    console.log(`exported ${cards.length} cards to ${args.exportFile} — Anki: File → Import (field separator Tab)`);
+    return 0;
   }
 
   if (args.dryRun) {
@@ -187,6 +213,9 @@ const HELP = `anki-forge — turn textbooks and lecture notes into Anki decks, w
 Import options:
   --deck <name>            target deck, "::" nests ("Med::Cardio")   required
   --dry-run                generate and preview, write nothing
+  --style basic|cloze      cloze generates {{c1::...}} fill-in cards (default basic)
+  --export <file>          write cards to a TSV file instead of Anki
+  --no-cache               re-call the LLM even if this exact section is cached
   --max-cards-per-chunk N  cap per section (default 10)
   --language LANG          force card language, default follows the material
   --tags a,b               extra tags on every card

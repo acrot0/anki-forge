@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-25
+
+### Added
+
+- **`.pptx` support** — slide text extracted with a built-in minimal ZIP
+  reader (no new dependency). Each slide is one chunk; slides are ordered
+  numerically and image-only decks report a clear OCR-needed error.
+- **`--style cloze`** — fill-in-the-blank cards via Anki's built-in Cloze
+  notetype; cards without a `{{c1::...}}` marker are dropped, never exported
+  as broken notes. Also offered in the wizard.
+- **Response cache** (`~/.anki-forge/cache-v1.json`) — re-running the same
+  material makes zero LLM calls; `--no-cache` bypasses. Keyed by content
+  (model, style, language, chunk text).
+- **`--export <file>`** — write cards to a TSV file (Anki: File → Import) so
+  decks can be shared or imported on mobile without a running desktop Anki.
+
 ## [0.2.0] — 2026-09-25
 
 ### Added
