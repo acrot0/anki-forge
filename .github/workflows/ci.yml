@@ -26,11 +26,13 @@ jobs:
 
       - run: npm test
 
-      - name: CLI help and usage errors exit cleanly
+      - name: CLI help prints and usage errors exit non-zero
+        # shell: bash is load-bearing: the default on Windows is pwsh, which
+        # cannot parse this script at all.
+        shell: bash
         run: |
-          node src/cli.mjs --help
-          node src/cli.mjs
-          if node src/cli.mjs import; then
+          node src/cli.mjs --help > /dev/null
+          if node src/cli.mjs import 2> /dev/null; then
             echo "::error::import without --deck must fail"
             exit 1
           fi
