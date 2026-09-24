@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/acrot0/anki-forge#readme",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.13.0"
   },
   "bin": {
     "anki-forge": "./src/cli.mjs"

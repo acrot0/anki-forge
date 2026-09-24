@@ -1,7 +1,7 @@
 # anki-forge
 
 [![CI](https://github.com/acrot0/anki-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/acrot0/anki-forge/actions/workflows/ci.yml)
-[![Node](https://img.shields.io/badge/node-%E2%89%A520-blue)](https://nodejs.org)
+[![Node](https://img.shields.io/badge/node-%E2%89%A522.13-blue)](https://nodejs.org)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 Turn textbooks, lecture notes and handouts into Anki decks — with **your own** LLM key.
@@ -44,7 +44,7 @@ from the [latest release](https://github.com/acrot0/anki-forge/releases/latest):
 ./anki-forge-macos-x64                  # Intel & Apple Silicon (Rosetta)
 ```
 
-**With Node.js ≥ 20**:
+**With Node.js ≥ 22.13**:
 
 ```bash
 npx anki-forge                          # interactive wizard
