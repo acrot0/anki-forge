@@ -23,6 +23,10 @@ jobs:
   build:
     name: build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    # Experimental matrix legs (macos-13) may fail or hang in the runner
+    # queue; with job-level continue-on-error their failure still counts as
+    # success for the release job, so Windows/Linux assets ship regardless.
+    continue-on-error: ${{ matrix.experimental || false }}
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +37,10 @@ jobs:
             out: anki-forge-linux-x64
           - os: macos-13
             out: anki-forge-macos-x64
+            # macos-13 runners queue for tens of minutes (and arm64 SEA
+            # binaries segfault outright), so a missing mac asset must not
+            # hold the whole release hostage.
+            experimental: true
     steps:
       - uses: actions/checkout@v5
 
@@ -46,6 +54,7 @@ jobs:
 
       - name: Tag agrees with package.json version
         if: github.ref_type == 'tag'
+        continue-on-error: ${{ matrix.experimental || false }}
         shell: bash
         run: |
           tag="${GITHUB_REF_NAME#v}"

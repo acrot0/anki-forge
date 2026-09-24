@@ -103,16 +103,19 @@ section titles are detected by shape.
 
 ```bash
 anki-forge import slides.pptx --deck "Course::Week1" --style cloze   # fill-in-the-blank cards
-anki-forge import textbook.pdf --deck "Exam" --export deck.txt       # TSV, no Anki needed
+anki-forge import textbook.pdf --deck "Exam" --export deck.apkg      # shareable deck file, no Anki needed
+anki-forge import textbook.pdf --deck "Exam" --concurrency 8         # faster on big decks
 ```
 
+- **`.apkg` export** produces a real Anki deck file (schema 11, SQLite built
+  in-process) — import it anywhere, send it to a classmate, keep it in git.
+  The target deck travels inside the file.
 - **Cloze cards** (`--style cloze`) use Anki's built-in Cloze notetype; the
   generator only emits cards with a real `{{c1::...}}` marker.
-- **`--export` writes TSV** (front ⇥ back ⇥ tags) — import it on mobile, share
-  it, or diff it in git before it ever touches your deck.
-- **Responses are cached** under `~/.anki-forge/` keyed by content, so
-  re-running a lecture with different filters costs nothing. The cache file
-  contains card text extracted from your material; delete it to forget.
+- **`--export` to TSV** (front ⇥ back ⇥ tags) for spreadsheets and diffs.
+- **Parallel generation** (`--concurrency`, default 4) with a live progress
+  bar; `--no-cache` re-runs, otherwise responses are cached under
+  `~/.anki-forge/` (it contains card text extracted from your material).
 
 ## How it treats your material (and your money)
 

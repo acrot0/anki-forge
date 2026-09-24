@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-09-25
+
+### Added
+
+- **`.apkg` export** (`--export deck.apkg`) — a real Anki deck file (schema
+  11, built with Node's built-in SQLite): import on any device, share it, no
+  running desktop app needed. The target deck ships inside the file.
+- **`.docx` support** — Word documents parsed per paragraph; run boundaries
+  (spell-check splits) preserve their inter-word spaces.
+- **Parallel generation** (`--concurrency N`, default 4) — chunks are now
+  processed concurrently instead of one at a time; large decks finish in a
+  fraction of the previous wall clock.
+- **Progress bar** on generation (TTY-aware; pipes stay quiet).
+
+### Fixed
+
+- TSV export used a newline as the field separator — files exported by 0.3.0
+  import as one column. Now tab-separated as documented.
+
 ## [0.3.0] — 2026-09-25
 
 ### Added

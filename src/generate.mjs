@@ -20,6 +20,7 @@ export const DEFAULTS = {
   language: null, // null = follow the source material
   maxCardsPerChunk: 10,
   style: 'basic', // 'basic' (Q/A) or 'cloze' ({{c1::...}})
+  concurrency: 4, // parallel chunks in flight; upstream rate limits cap this harder than we do
 };
 
 const BASIC_PROMPT = (language) => `You turn study material into Anki flashcards.
@@ -117,20 +118,35 @@ export function cacheKey(chunk, opts) {
   return h.digest('hex').slice(0, 32);
 }
 
+/** Map with a concurrency limit, preserving input order in the output. */
+async function pMapWithLimit(items, limit, worker) {
+  const results = new Array(items.length);
+  let next = 0;
+  const runners = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await worker(items[i], i);
+    }
+  });
+  await Promise.all(runners);
+  return results;
+}
+
 /**
  * Generate cards for every chunk. Returns per-chunk stats so the caller can
  * show progress and the user can see exactly which section produced nothing.
- * `cache` (optional) maps cacheKey → raw card array.
+ * `cache` (optional) maps cacheKey → raw card array. `onProgress(done, total)`
+ * fires after each chunk settles, in completion order.
  */
-export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = null } = {}) {
+export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = null, onProgress = null } = {}) {
   const cfg = { ...DEFAULTS, ...opts };
   if (!cfg.apiKey) throw new Error('no API key: pass --api-key or set OPENAI_API_KEY');
   if (!cfg.model) throw new Error('no model: pass --model (e.g. deepseek-chat, gpt-4o-mini, glm-4-flash)');
   if (!['basic', 'cloze'].includes(cfg.style)) throw new Error(`unknown card style "${cfg.style}" — use basic or cloze`);
   const systemPrompt = cfg.style === 'cloze' ? CLOZE_PROMPT(cfg.language) : BASIC_PROMPT(cfg.language);
-  const out = [];
-  const perChunk = [];
-  for (const chunk of chunks) {
+  let done = 0;
+
+  const perChunk = await pMapWithLimit(chunks, cfg.concurrency, async (chunk) => {
     const key = cacheKey(chunk, cfg);
     let rawCards = null;
     let lastError = null;
@@ -159,14 +175,18 @@ export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = n
       }
       if (rawCards !== null && cache) cache.set(key, rawCards);
     }
+    done++;
+    onProgress?.(done, chunks.length);
     if (rawCards === null) {
-      perChunk.push({ title: chunk.title, generated: 0, error: lastError?.message ?? 'no JSON array' });
-      continue;
+      return { title: chunk.title, generated: 0, error: lastError?.message ?? 'no JSON array' };
     }
     const limited = rawCards.slice(0, cfg.maxCardsPerChunk);
     const { cards, dropped, duplicates } = normalizeCards(limited, cfg.style);
-    out.push(...cards.map((c) => ({ ...c, source: chunk.title || '' })));
-    perChunk.push({ title: chunk.title, generated: cards.length, dropped, duplicates, cached });
-  }
-  return { cards: out, perChunk };
+    return { title: chunk.title, cards: cards.map((c) => ({ ...c, source: chunk.title || '' })), generated: cards.length, dropped, duplicates, cached };
+  });
+
+  return {
+    cards: perChunk.flatMap((p) => p.cards ?? []),
+    perChunk: perChunk.map(({ cards, ...rest }) => rest),
+  };
 }

@@ -16,6 +16,7 @@ import { pathToFileURL } from 'node:url';
 import { checkConnection, ensureDeck, addCards } from './anki.mjs';
 import { generateCards } from './generate.mjs';
 import { loadCache } from './cache.mjs';
+import { writeApkgBytes } from './apkg.mjs';
 import { parseFile } from './parse.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
 
@@ -54,6 +55,7 @@ export function parseArgs(argv, env = process.env) {
     else if (a === '--style') out.style = val();
     else if (a === '--export') out.exportFile = val();
     else if (a === '--no-cache') out.noCache = true;
+    else if (a === '--concurrency') out.concurrency = Number(val());
     else if (a === '--base-url') out.baseUrl = val();
     else if (a === '--model') out.model = val();
     else if (a === '--api-key') out.apiKey = val();
@@ -87,6 +89,7 @@ export function toArgv(args) {
   if (args.style) argv.push('--style', args.style);
   if (args.exportFile) argv.push('--export', args.exportFile);
   if (args.noCache) argv.push('--no-cache');
+  if (args.concurrency) argv.push('--concurrency', String(args.concurrency));
   if (args.ankiUrl !== DEFAULT_ANKI_URL) argv.push('--anki-url', args.ankiUrl);
   return argv;
 }
@@ -151,9 +154,18 @@ async function runImport(args) {
     return 1;
   }
 
-  console.error(`  ${allChunks.length} chunks → up to ${allChunks.length} LLM calls`);
+  console.error(`  ${allChunks.length} chunks → up to ${allChunks.length} LLM calls (up to ${args.concurrency ?? 4} in flight)`);
   const cache = args.noCache ? null : await loadCache();
-  const { cards, perChunk } = await generateCards(allChunks, args, { cache });
+  // Progress needs a terminal to redraw on; in a pipe it would just spam lines.
+  const onProgress = process.stderr.isTTY
+    ? (done, total) => {
+        const width = 24;
+        const filled = Math.round((done / total) * width);
+        process.stderr.write(`\r  [${'█'.repeat(filled)}${'·'.repeat(width - filled)}] ${done}/${total} chunks `);
+        if (done === total) process.stderr.write('\n');
+      }
+    : null;
+  const { cards, perChunk } = await generateCards(allChunks, args, { cache, onProgress });
   if (cache) await cache.save();
   summarize(perChunk, 'generation');
   const cachedCount = perChunk.filter((c) => c.cached).length;
@@ -164,6 +176,12 @@ async function runImport(args) {
   }
 
   if (args.exportFile) {
+    if (args.exportFile.toLowerCase().endsWith('.apkg')) {
+      const bytes = await writeApkgBytes(cards, { deckName: args.deck, style: args.style ?? 'basic' });
+      await writeFile(args.exportFile, bytes);
+      console.log(`exported ${cards.length} cards to ${args.exportFile} — open it or use Anki: File → Import`);
+      return 0;
+    }
     const tsv = cards
       .map((c) => [c.front, c.back, [...args.tags, ...c.tags].join(' ')].join('\t'))
       .join('\n');

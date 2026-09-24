@@ -81,7 +81,7 @@ export function parsePdfText(text, { maxChars = DEFAULT_MAX_CHARS } = {}) {
  */
 export async function parseFile(filePath, opts = {}) {
   const ext = path.extname(filePath).toLowerCase();
-  const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', ''];
+  const supported = ['.pdf', '.md', '.markdown', '.txt', '.pptx', '.docx', ''];
   if (!supported.includes(ext)) {
     throw new Error(`unsupported file type "${ext}" (${filePath}) — use .pdf, .pptx, .md or .txt`);
   }
@@ -106,6 +106,10 @@ export async function parseFile(filePath, opts = {}) {
   if (ext === '.pptx') {
     const buf = await readFile(filePath);
     return { chunks: parsePptx(buf, opts), kind: 'pptx' };
+  }
+  if (ext === '.docx') {
+    const buf = await readFile(filePath);
+    return { chunks: parseDocx(buf, opts), kind: 'docx' };
   }
   const raw = await readFile(filePath, 'utf8');
   if (ext === '.md' || ext === '.markdown') return { chunks: parseMarkdown(raw, opts), kind: 'markdown' };
@@ -157,4 +161,26 @@ function decodeXml(s) {
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
     .replace(/&amp;/g, '&');
+}
+
+/**
+ * Word documents: <w:p> paragraphs, <w:t> text runs. Paragraphs become lines,
+ * then the generic size-based packing applies (prose is long enough that the
+ * merge logic works here, unlike slides).
+ */
+export function parseDocx(buf, opts = {}) {
+  const entries = readZip(buf);
+  const xml = entries.get('word/document.xml');
+  if (!xml) throw new Error('not a .docx (no word/document.xml inside)');
+  const paragraphs = [...xml.toString('utf8').matchAll(/<w:p[ >]([\s\S]*?)<\/w:p>/g)]
+    // Collapse XML pretty-printing whitespace inside runs but keep real
+    // spaces: Word splits runs at spell-check boundaries, where the trailing
+    // space of one run is the separator between words of the next.
+    .map((m) => [...m[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((t) => decodeXml(t[1].replace(/\s+/g, ' '))).join(''))
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (paragraphs.join('').length < 40) {
+    throw new Error('DOCX has almost no extractable text — scanned images need OCR; anki-forge does not OCR.');
+  }
+  return parseText(paragraphs.join('\n'), opts);
 }

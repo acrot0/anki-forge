@@ -152,7 +152,7 @@ describe('main', () => {
     const orig = console.error;
     console.error = (m) => errs.push(m);
     try {
-      assert.equal(await main(['import', 'file.docx', '--deck', 'D']), 2);
+      assert.equal(await main(['import', 'file.xlsx', '--deck', 'D']), 2);
     } finally {
       console.error = orig;
     }
