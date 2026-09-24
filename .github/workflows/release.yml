@@ -31,8 +31,8 @@ jobs:
             out: anki-forge-windows-x64.exe
           - os: ubuntu-latest
             out: anki-forge-linux-x64
-          - os: macos-latest
-            out: anki-forge-macos-arm64
+          - os: macos-13
+            out: anki-forge-macos-x64
     steps:
       - uses: actions/checkout@v5
 

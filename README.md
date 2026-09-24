@@ -41,7 +41,7 @@ from the [latest release](https://github.com/acrot0/anki-forge/releases/latest):
 ```bash
 ./anki-forge-windows-x64.exe            # Windows (SmartScreen may warn: unsigned)
 ./anki-forge-linux-x64
-./anki-forge-macos-arm64                # Apple Silicon
+./anki-forge-macos-x64                  # Intel & Apple Silicon (Rosetta)
 ```
 
 **With Node.js ≥ 20**:
