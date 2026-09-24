@@ -4,14 +4,18 @@
  *
  *   anki-forge import lecture.pdf --deck "Med school::Cardio"
  *   anki-forge import notes.md textbook.txt --deck "考研政治" --dry-run
+ *   anki-forge                    # interactive wizard
  *   anki-forge check
  *
  * Exit codes: 0 = ran (even with partial skips), 1 = nothing usable produced,
  * 2 = usage or environment error.
  */
+import readline from 'node:readline/promises';
+import { pathToFileURL } from 'node:url';
 import { checkConnection, ensureDeck, addCards } from './anki.mjs';
 import { generateCards } from './generate.mjs';
-import { parseFile, MIN_CHARS } from './parse.mjs';
+import { parseFile } from './parse.mjs';
+import { PROVIDERS, applyProvider } from './providers.mjs';
 
 export const DEFAULT_ANKI_URL = 'http://127.0.0.1:8765';
 
@@ -21,8 +25,10 @@ export function parseArgs(argv, env = process.env) {
     files: [],
     deck: null,
     dryRun: false,
+    interactive: false,
     maxCardsPerChunk: null,
     language: null,
+    provider: null,
     baseUrl: env.OPENAI_BASE_URL ?? null,
     model: env.OPENAI_MODEL ?? null,
     apiKey: env.OPENAI_API_KEY ?? null,
@@ -36,8 +42,10 @@ export function parseArgs(argv, env = process.env) {
     if (a === 'import' || a === 'check') out.command = a;
     else if (a === '--deck') out.deck = val();
     else if (a === '--dry-run') out.dryRun = true;
+    else if (a === '--interactive' || a === '-i') out.interactive = true;
     else if (a === '--max-cards-per-chunk') out.maxCardsPerChunk = Number(val());
     else if (a === '--language') out.language = val();
+    else if (a === '--provider') out.provider = val();
     else if (a === '--base-url') out.baseUrl = val();
     else if (a === '--model') out.model = val();
     else if (a === '--api-key') out.apiKey = val();
@@ -59,9 +67,65 @@ function summarize(perChunk, label) {
   if (failed.length > 5) console.error(`    ... and ${failed.length - 5} more`);
 }
 
+export function toArgv(args) {
+  const argv = ['import', ...args.files];
+  if (args.deck) argv.push('--deck', args.deck);
+  if (args.dryRun) argv.push('--dry-run');
+  if (args.provider) argv.push('--provider', args.provider);
+  if (args.baseUrl) argv.push('--base-url', args.baseUrl);
+  if (args.model) argv.push('--model', args.model);
+  if (args.apiKey) argv.push('--api-key', args.apiKey);
+  if (args.language) argv.push('--language', args.language);
+  if (args.ankiUrl !== DEFAULT_ANKI_URL) argv.push('--anki-url', args.ankiUrl);
+  return argv;
+}
+
+/**
+ * Interactive wizard: question order is deliberately short. Returns the final
+ * argv (dry-run first unless the user opts straight in), so the whole flow
+ * re-enters main() and there is exactly one code path that touches Anki.
+ */
+export async function wizard(argvIn, { rl = null } = {}) {
+  const own = !rl;
+  rl ??= readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = async (q, fallback) => {
+    const suffix = fallback !== undefined && fallback !== '' ? ` [${fallback}]` : '';
+    const a = (await rl.question(`${q}${suffix}: `)).trim();
+    return a || (fallback ?? '');
+  };
+  try {
+    console.log('anki-forge — study files → Anki deck. ENTER accepts the [suggestion].\n');
+    const out = {};
+    out.files = String(await ask('File(s) to import (comma-separated, .pdf/.md/.txt)')).split(',').map((f) => f.trim()).filter(Boolean);
+    if (out.files.length === 0) throw new Error('no files given');
+    out.deck = await ask('Deck name ("::" nests)', 'Imported');
+
+    const names = Object.keys(PROVIDERS);
+    console.log(`  providers: ${names.join(', ')}`);
+    out.provider = (await ask('Provider', 'deepseek')).toLowerCase();
+    if (!PROVIDERS[out.provider]) throw new Error(`unknown provider "${out.provider}" — known: ${names.join(', ')}`);
+    out.model = await ask('Model', PROVIDERS[out.provider].hint);
+    out.apiKey = await ask('API key (ENTER = $OPENAI_API_KEY)', process.env.OPENAI_API_KEY ?? '');
+    if (!out.apiKey && !PROVIDERS[out.provider].keyless) throw new Error('no API key');
+
+    const preview = (await ask('Preview cards first, write nothing yet (Y/n)', 'Y')).toLowerCase();
+    const argv = toArgv({ ...out, dryRun: preview !== 'n' });
+    const code = await main(argv, process.env);
+    if (code !== 0) return code;
+    if (preview !== 'n') {
+      const go = (await ask('\nWrite these into Anki now? (y/N)', 'N')).toLowerCase();
+      if (go === 'y') return main(toArgv({ ...out, dryRun: false }), process.env);
+    }
+    return code;
+  } finally {
+    if (own) rl.close();
+  }
+}
+
 async function runImport(args) {
   if (!args.deck) throw new Error('import requires --deck <name> (use :: for nesting, e.g. "Med::Cardio")');
   if (args.files.length === 0) throw new Error('import requires at least one file (.pdf, .md, .txt)');
+  applyProvider(args);
 
   const allChunks = [];
   for (const file of args.files) {
@@ -106,15 +170,17 @@ async function runImport(args) {
 }
 
 async function runCheck(args) {
+  applyProvider(args);
   const { version } = await checkConnection(args.ankiUrl);
   console.log(`AnkiConnect OK (${args.ankiUrl}, protocol v${version})`);
-  if (!args.apiKey) console.log('OPENAI_API_KEY not set — generation will fail until it is');
-  if (!args.model) console.log('no model configured — pass --model or set OPENAI_MODEL');
+  if (!args.apiKey) console.log('no API key yet — generation will fail until --api-key or $OPENAI_API_KEY is set');
+  if (!args.model) console.log('no model configured — pass --model, --provider, or $OPENAI_MODEL');
   return 0;
 }
 
 const HELP = `anki-forge — turn textbooks and lecture notes into Anki decks, with your own LLM key.
 
+  anki-forge                               interactive wizard
   anki-forge import <file...> --deck <name> [options]
   anki-forge check
 
@@ -125,6 +191,7 @@ Import options:
   --language LANG          force card language, default follows the material
   --tags a,b               extra tags on every card
 Generation (any OpenAI-compatible endpoint):
+  --provider NAME          shortcut for known endpoints: ${Object.keys(PROVIDERS).join(', ')}
   --base-url URL           default $OPENAI_BASE_URL or https://api.openai.com/v1
   --model NAME             default $OPENAI_MODEL (required)
   --api-key KEY            default $OPENAI_API_KEY                    required
@@ -133,7 +200,7 @@ Anki:
                            (requires Anki desktop running with the AnkiConnect add-on)
 `;
 
-export async function main(argv = process.argv.slice(2), env = process.env) {
+export async function main(argv = process.argv.slice(2), env = process.env, { rl = null } = {}) {
   let args;
   try {
     args = parseArgs(argv, env);
@@ -141,9 +208,24 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
     console.error(`error: ${e.message}`);
     return 2;
   }
-  if (!args.command || args.command === 'help') {
+  if (args.command === 'help') {
     console.log(HELP);
-    return args.command ? 0 : 2;
+    return 0;
+  }
+  if (!args.command) {
+    // The wizard needs a terminal. Piped/CI stdin is not one — silently
+    // blocking on a question there would hang the process instead of failing.
+    const tty = Boolean(process.stdin?.isTTY);
+    if (args.interactive) {
+      if (!tty) {
+        console.error('--interactive needs a terminal (stdin is not a TTY)');
+        return 2;
+      }
+      return wizard(argv, { rl });
+    }
+    if (argv.length === 0 && tty) return wizard(argv, { rl });
+    console.log(HELP);
+    return 2;
   }
   try {
     return args.command === 'check' ? await runCheck(args) : await runImport(args);
@@ -153,5 +235,14 @@ export async function main(argv = process.argv.slice(2), env = process.env) {
   }
 }
 
-const isMain = process.argv[1] && (await import('node:url')).pathToFileURL(process.argv[1]).href === import.meta.url;
-if (isMain) process.exit(await main());
+// No top-level await here on purpose: the SEA single-file build bundles this
+// module to CJS, which cannot express it. main() handles its own errors.
+const isMain = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (isMain) {
+  main()
+    .then((code) => process.exit(code))
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    });
+}

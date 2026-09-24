@@ -1,6 +1,6 @@
 {
   "name": "anki-forge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn textbooks, lecture notes and handouts (PDF/Markdown/TXT) into Anki decks with any OpenAI-compatible LLM. Bring your own key.",
   "type": "module",
   "license": "MIT",
@@ -40,5 +40,9 @@
   ],
   "dependencies": {
     "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6"
   }
 }

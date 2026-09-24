@@ -1,0 +1,102 @@
+name: Release
+
+# Pushing a v* tag builds a self-contained single executable for Windows,
+# Linux and macOS (no Node needed on the user's machine) and attaches them to
+# a GitHub Release. Tests run in every platform job before anything is packed.
+#
+# macOS handling: GitHub's runner node is ad-hoc signed, and postject requires
+# the signature removed before injection and re-added afterwards — that is the
+# remove-signature / codesign -s - pair below, not decoration.
+#
+# The Windows binary is unsigned; SmartScreen will warn on first run. That is
+# documented in the README (code signing costs money this project does not have).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            out: anki-forge-windows-x64.exe
+          - os: ubuntu-latest
+            out: anki-forge-linux-x64
+          - os: macos-latest
+            out: anki-forge-macos-arm64
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Tag agrees with package.json version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag says v$tag but package.json says $pkg"
+            exit 1
+          fi
+
+      - name: Bundle to a single CommonJS file
+        shell: bash
+        run: npx esbuild src/sea-entry.mjs --bundle --platform=node --format=cjs --outfile=dist/cli.cjs
+
+      - name: Prepare SEA blob
+        shell: bash
+        run: |
+          echo '{"main":"dist/cli.cjs","output":"dist/sea-prep.blob","disableExperimentalSEAWarning":true}' > dist/sea-config.json
+          node --experimental-sea-config dist/sea-config.json
+
+      - name: Inject into the Node binary
+        shell: bash
+        run: |
+          cp "$(node -p "process.execPath")" "dist/${{ matrix.out }}"
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            codesign --remove-signature "dist/${{ matrix.out }}"
+          fi
+          npx postject "dist/${{ matrix.out }}" NODE_SEA_BLOB dist/sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            codesign -s - "dist/${{ matrix.out }}"
+          fi
+
+      - name: Smoke test the binary
+        shell: bash
+        run: "./dist/${{ matrix.out }} --help"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.out }}
+          path: dist/${{ matrix.out }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          path: dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

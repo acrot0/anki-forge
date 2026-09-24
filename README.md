@@ -33,16 +33,49 @@ is exactly what a script gets wrong. anki-forge is the missing CLI:
 - **One dependency.** `pdf-parse` is the only runtime dependency; everything
   else is Node built-ins.
 
-## Setup (once)
+## Install
 
-1. [Anki](https://apps.ankiweb.net) desktop, with the
-   [AnkiConnect](https://foosoft.net/projects/anki-connect/) add-on (code `2055492159`).
-2. An API key for any OpenAI-compatible provider:
+**Single executable** (no Node.js needed) — grab the file for your platform
+from the [latest release](https://github.com/acrot0/anki-forge/releases/latest):
 
 ```bash
-export OPENAI_API_KEY=sk-...
-export OPENAI_BASE_URL=https://api.deepseek.com/v1   # optional, defaults to OpenAI
-export OPENAI_MODEL=deepseek-chat                    # required
+./anki-forge-windows-x64.exe            # Windows (SmartScreen may warn: unsigned)
+./anki-forge-linux-x64
+./anki-forge-macos-arm64                # Apple Silicon
+```
+
+**With Node.js ≥ 20**:
+
+```bash
+npx anki-forge                          # interactive wizard
+npx anki-forge import lecture.pdf --deck "Med::Cardio"
+```
+
+or `npm install -g anki-forge` (once published to npm).
+
+## Quick start
+
+The shortest path is the wizard — just run `anki-forge` (or `npx anki-forge`)
+in a terminal and answer the questions:
+
+```
+$ anki-forge
+anki-forge — study files → Anki deck. ENTER accepts the [suggestion].
+
+  File(s) to import (comma-separated, .pdf/.md/.txt): 高数讲义.pdf
+  Deck name ("::" nests) [Imported]: 考研::数学
+  providers: openai, deepseek, zhipu, kimi, siliconflow, ollama
+  Provider [deepseek]:
+  Model [deepseek-chat]:
+  API key (ENTER = $OPENAI_API_KEY):
+  Preview cards first, write nothing yet (Y/n):
+```
+
+Prefer one-liners:
+
+```bash
+anki-forge import lecture.pdf --deck "Med school::Cardio"
+anki-forge import 考研政治讲义.md --deck "考研::政治" --dry-run   # preview, write nothing
 ```
 
 ## Usage
