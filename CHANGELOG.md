@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-09-25
+
+### Changed
+
+- **Full UI rebuilt on DaisyUI/Tailwind** — the complete interface adopts the
+  same professional design system as the demo page: navbar, gradient hero,
+  step-numbered cards, toggle segments, stat tiles, skeleton loaders. Every
+  screen was verified with real browser screenshots during development, not
+  written blind.
+- Card previews use the fade-toggle pattern (3D transforms proved
+  inconsistent across embedded webviews).
+
 ## [0.13.0] — 2026-09-25
 
 ### Changed
