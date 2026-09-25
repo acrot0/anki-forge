@@ -10,16 +10,17 @@
 <meta name="theme-color" content="#f8fafc">
 <style>
   :root {
-    --bg: #0f1122; --card: #181b39; --ink: #eef0f8; --sub: #9aa3c0; --faint: #6a7194;
-    --line: rgba(170,160,247,.16); --teal: #21a582; --teal-d: #2ec4a0; --teal-bg: rgba(33,165,130,.14);
-    --err: #fd5f6c;
+    --bg: #f5f7fa; --card: #ffffff; --ink: #1a2230; --sub: #5d6676; --faint: #8b94a3;
+    --line: #e2e7ee; --teal: #0d9488; --teal-d: #0f766e; --teal-bg: #e4f4f1;
+    --err: #dc2626;
   }
   * { box-sizing: border-box; margin: 0; }
+  @keyframes pageIn { from { opacity: 0; transform: translateX(46px) rotateY(-12deg); } to { opacity: 1; transform: none; } }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
     background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased;
   }
-  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: var(--card);
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: #ffffff;
          box-shadow: 0 0 0 1px var(--line), 0 4px 24px rgba(16,24,40,.05); }
   @media (min-width: 560px) { .app { margin-top: 20px; border-radius: 18px; } }
   .appbar {
@@ -36,21 +37,21 @@
   textarea {
     width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 12px;
     padding: 11px 13px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
-    background: rgba(24,27,57,.5); color: var(--ink); outline: none; transition: border-color .15s;
+    background: #fbfcfd; color: var(--ink); outline: none; transition: border-color .15s;
   }
   textarea:focus { border-color: var(--teal); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-  .chip { border: 1px solid var(--line); background: var(--card); color: var(--sub); cursor: pointer;
+  .chip { border: 1px solid var(--line); background: #ffffff; color: var(--sub); cursor: pointer;
           font-size: 12.5px; padding: 7px 12px; border-radius: 99px; transition: all .15s; }
   .chip:active { transform: scale(.96); }
 
   .btn {
     display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
     border: 0; cursor: pointer; font-size: 14.5px; font-weight: 650; color: #fff; min-height: 46px;
-    background: linear-gradient(135deg, #21a582, #178a6e); box-shadow: 0 2px 12px rgba(33,165,130,.3); border-radius: 12px; margin-top: 12px; box-shadow: 0 2px 10px rgba(13,148,136,.25); transition: background .15s, transform .1s;
+    background: linear-gradient(135deg, #0d9488, #0f766e); box-shadow: 0 2px 12px rgba(13,148,136,.25); border-radius: 12px; margin-top: 12px; box-shadow: 0 2px 10px rgba(13,148,136,.25); transition: background .15s, transform .1s;
   }
   .btn:active { transform: scale(.98); }
-  .btn.secondary { background: rgba(33,165,130,.14); color: #2ec4a0; width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
+  .btn.secondary { background: var(--teal-bg); color: var(--teal-d); width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
 
   .msg { margin: 10px 0 0; font-size: 13px; padding: 9px 12px; border-radius: 10px; display: none; }
   .msg.err { display: block; background: #fef2f2; color: var(--err); }
@@ -58,12 +59,12 @@
 
   .search { position: relative; margin-top: 10px; }
   .search input { width: 100%; border: 1.5px solid var(--line); border-radius: 11px; padding: 9px 12px 9px 36px;
-    font-size: 13.5px; background: rgba(24,27,57,.5); color: var(--ink); outline: none; }
+    font-size: 13.5px; background: #fbfcfd; color: var(--ink); outline: none; }
   .search input:focus { border-color: var(--teal); }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--faint); fill: none; stroke-width: 2; }
   .clist { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
-  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--card); transition: border-color .15s, box-shadow .15s; }
-  .citem:hover { border-color: rgba(170,160,247,.45); background: rgb(32,35,73); box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #ffffff; transition: border-color .15s, box-shadow .15s; }
+  .citem:hover { border-color: rgba(13,148,136,.45); box-shadow: 0 2px 12px rgba(13,148,136,.10); }
   .citem .qrow { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; cursor: pointer; }
   .citem .qnum { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--teal-bg);
     color: var(--teal-d); font-size: 11px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
@@ -90,7 +91,7 @@
   .obar .prog i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: 99px; transition: width .3s; }
   .obar .cnt { font-size: 12px; color: var(--sub); }
   .ocard-area { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; }
-  .ocard { background: var(--card); border: 1px solid rgba(170,160,247,.18); border-radius: 16px; padding: 22px 18px;
+  .ocard { background: #ffffff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px;
     min-height: 210px; display: flex; flex-direction: column; box-shadow: 0 2px 14px rgba(16,24,40,.06);
     touch-action: pan-y; user-select: none; -webkit-user-select: none; }
   .ocard .tagline { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--teal); margin-bottom: 10px;
@@ -100,10 +101,10 @@
   .ocard .qkeep { font-size: 13px; font-weight: 600; color: var(--sub); border-bottom: 1px dashed var(--line);
     padding-bottom: 10px; margin-bottom: 12px; line-height: 1.5; }
   .ocard .src { font-size: 11.5px; color: var(--faint); margin-top: 12px; }
-  .ocard .speak-btn { border: 1px solid var(--line); background: var(--card); border-radius: 99px; width: 34px; height: 34px;
+  .ocard .speak-btn { border: 1px solid var(--line); background: #ffffff; border-radius: 99px; width: 34px; height: 34px;
     display: grid; place-items: center; cursor: pointer; }
   .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
-  .grades button { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 11px 0;
+  .grades button { border: 1px solid var(--line); background: #ffffff; border-radius: 12px; padding: 11px 0;
     font-size: 13px; font-weight: 650; cursor: pointer; color: var(--ink); }
   .grades button small { display: block; font-size: 10.5px; font-weight: 400; color: var(--faint); margin-top: 2px; }
   .grades .g1 { border-color: #fecaca; } .grades .g1:active { background: #fef2f2; }
@@ -128,7 +129,7 @@
 
   <div class="body">
       <div class="sec-label">导入材料（Word / TXT / MD / 粘贴文本，本地处理）</div>
-    <input type="file" id="fileinput" accept=".docx,.md,.markdown,.txt" class="hidden">
+    <input type="file" id="fileinput" accept=".docx,.pdf,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp" class="hidden">
     <button class="btn secondary" id="filebtn" style="margin-top:0">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
       选择文件（Word / TXT / MD）
@@ -215,37 +216,93 @@ const DEMOS = {
   cs: 'TCP 是一种面向连接的可靠传输协议。UDP 是一种无连接的不可靠传输协议。\nHTTP 的常见状态码包括 200、301、404 和 500。\nDNS 的作用是将域名解析为 IP 地址。\n三次握手是 TCP 建立连接的过程。包丢失会导致数据传输不完整。\nHTTPS 是在 HTTP 基础上加入 TLS 加密层的协议。',
   med: '免疫系统是人体抵御病原体的防御体系。抗原是指能够触发免疫应答的物质。\n抗体包括 IgG、IgA、IgM、IgE 和 IgD 五类。\n炎症反应会导致局部红肿热痛。疫苗通过诱导机体产生抗体和记忆细胞来提供保护。\n过敏反应是免疫系统对无害物质的过度应答。',
 };
-// ---- 文件导入（Word / TXT / MD）----
+// ---- 智能文件导入：编码检测 + PDF + OCR + Word ----
 function decodeXmlEntities(s) {
   return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+}
+// 编码自动检测：UTF-8 解出替换字符即按 GBK 重解码，防中文乱码
+function readTextSmart(buf) {
+  let text = new TextDecoder('utf-8').decode(buf);
+  const bad = (text.match(/\uFFFD/g) || []).length;
+  if (bad > Math.max(1, text.length * 0.005)) {
+    try { text = new TextDecoder('gbk').decode(buf); } catch {}
+  }
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  return text;
 }
 function parseDocxBrowser(arrayBuf) {
   const zip = fflate.unzipSync(new Uint8Array(arrayBuf));
   const xmlEntry = Object.keys(zip).find((k) => k === 'word/document.xml');
   if (!xmlEntry) throw new Error('不是有效的 .docx 文件（缺少 word/document.xml）');
   const xml = new TextDecoder().decode(zip[xmlEntry]);
-  const paras = [...xml.matchAll(/<w:p[ >]([\s\S]*?)<\/w:p>/g)]
-    .map((m) => [...m[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)]
+  const paras = [...xml.matchAll(/<w:p[ >](["\s\S"]*?)<\/w:p>/g)]
+    .map((m) => [...m[1].matchAll(/<w:t[^>]*>(["\s\S"]*?)<\/w:t>/g)]
       .map((t) => decodeXmlEntities(t[1].replace(/\s+/g, ' '))).join(''))
     .map((p) => p.trim()).filter(Boolean);
-  if (paras.join('').length < 20) throw new Error('Word 文档几乎没有文字——扫描图片需要 OCR，本页不支持');
+  if (paras.join('').length < 20) throw new Error('Word 文档几乎没有文字——扫描图片请改导入图片（自动 OCR）');
   return paras.join('\n');
+}
+async function parsePdfBrowser(arrayBuf) {
+  await loadScript('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/legacy/build/pdf.min.mjs', 'module');
+  const pdfjs = window.pdfjsLib;
+  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/legacy/build/pdf.worker.min.mjs';
+  const doc = await pdfjs.getDocument({ data: arrayBuf }).promise;
+  const parts = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const tc = await page.getTextContent();
+    const line = tc.items.map((it) => it.str).join(' ').replace(/\s+/g, ' ').trim();
+    if (line) parts.push('【第' + p + '页】' + line);
+  }
+  const text = parts.join('\n');
+  if (text.replace(/【[^】]*】/g, '').trim().length < 20) {
+    throw new Error('PDF 没有可用文字层——扫描版请截图后导入图片（自动 OCR）');
+  }
+  return text;
+}
+async function ocrImageBrowser(arrayBuf) {
+  await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+  if (!window.__ocrWorker) {
+    window.__ocrWorker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, { logger: () => {} });
+  }
+  const { data: { text } } = await window.__ocrWorker.recognize(new Blob([arrayBuf]));
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+function loadScript(src, type) {
+  window.__loadedScripts = window.__loadedScripts || {};
+  if (window.__loadedScripts[src]) return window.__loadedScripts[src];
+  window.__loadedScripts[src] = type === 'module'
+    ? import(src)
+    : new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = res;
+        s.onerror = () => rej(new Error('资源加载失败：' + src));
+        document.head.appendChild(s);
+      });
+  return window.__loadedScripts[src];
+}
+async function smartReadFile(f) {
+  const buf = await f.arrayBuffer();
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'docx') return parseDocxBrowser(buf);
+  if (ext === 'pdf') return parsePdfBrowser(buf);
+  if (['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext)) {
+    msg('正在 OCR 识别图片文字（首次使用会下载识别模型）…');
+    return ocrImageBrowser(buf);
+  }
+  return readTextSmart(buf);
 }
 $('filebtn').onclick = () => $('fileinput').click();
 $('fileinput').onchange = async (e) => {
   const f = e.target.files[0];
   if (!f) return;
   try {
-    let text;
-    if (/\.docx$/i.test(f.name)) {
-      text = parseDocxBrowser(await f.arrayBuffer());
-    } else {
-      text = await f.text();
-    }
+    msg('正在读取 ' + f.name + ' …');
+    const text = await smartReadFile(f);
     if (!text.trim()) throw new Error('文件内容为空');
     $('text').value = text;
     $('filechip').style.display = 'flex';
-    $('filechip').innerHTML = '<span>📄 ' + esc(f.name) + '（' + (f.size / 1024).toFixed(0) + ' KB）— 已载入，点生成</span><span class="x" onclick="clearFile()">✕</span>';
+    $('filechip').innerHTML = '<span>📄 ' + esc(f.name) + '（' + (f.size / 1024).toFixed(0) + ' KB）— 已载入并自动识别</span><span class="x" onclick="clearFile()">✕</span>';
     generate();
   } catch (err) {
     $('filechip').style.display = 'flex';
@@ -303,7 +360,10 @@ function extractCards(text, cap) {
 function generate() {
   const text = $('text').value.trim();
   if (!text) return msg('先粘贴材料，或点上方示例', true);
-  const isWords = text.split(/\n/).every((l) => l.trim() === '' || /^[a-zA-Z][\w'-]*\s/.test(l.trim()));
+  const lines = text.split(/\n+/).filter((l) => l.trim());
+  const wordLines = lines.filter((l) => /^[a-zA-Z][\w'-]*\s/.test(l.trim())).length;
+  // 智能识别：超过 60% 的行是「单词+释义」格式 → 词表模式
+  const isWords = lines.length > 0 && wordLines / lines.length > 0.6;
   CARDS = isWords
     ? text.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => {
         const m = l.match(/^(\S+)\s+(.+?)(?:。\s*例：(.+?))?\.?$/);
@@ -376,6 +436,10 @@ function renderStudy() {
   $('osrc').textContent = c.source ? '📍 ' + c.source : '';
   $('ospeak').style.display = /[a-zA-Z]{3,}/.test(c.front) ? 'inline-block' : 'none';
   $('ocard').style.transform = '';
+  $('ocard').parentElement.style.perspective = '1200px';
+  $('ocard').style.animation = 'none';
+  void $('ocard').offsetHeight;
+  $('ocard').style.animation = 'pageIn .42s cubic-bezier(.16,1,.3,1)';
   $('oprogress').style.width = Math.round(STUDY.index / STUDY.queue.length * 100) + '%';
   $('ocount').textContent = (STUDY.index + 1) + '/' + STUDY.queue.length;
 }

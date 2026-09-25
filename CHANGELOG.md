@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.21.0] — 2026-09-25
+
+### Added
+
+- **Light education palette** (user-requested): layered slate canvas, white
+  cards, teal accent — matching how actual learning tools look.
+- **Smart file import**: TXT/MD with automatic encoding detection (UTF-8 →
+  GBK fallback, no more 中文乱码), **PDF text layer** (pdf.js), **image OCR**
+  (tesseract.js, chi_sim+eng, lazy-loaded) — a photo of a textbook page
+  becomes cards.
+- **Smart vocabulary detection**: >60% word-definition lines flips the
+  parser into vocab mode automatically.
+- **Page-flip animation** on the study card (rotateY entrance, expo-out).
+
 ## [0.20.0] — 2026-09-25
 
 ### Changed
