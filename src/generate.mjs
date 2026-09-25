@@ -23,24 +23,29 @@ export const DEFAULTS = {
   concurrency: 4, // parallel chunks in flight; upstream rate limits cap this harder than we do
 };
 
-const BASIC_PROMPT = (language) => `You turn study material into Anki flashcards.
+const BASIC_PROMPT = (language) => `You turn study material into Anki flashcards for exam preparation.
 Rules for every card:
 - One atomic fact or concept per card. If a card needs "and", split it.
-- Front is a specific question or prompt; never "What is discussed in this section?".
-- Back is a self-contained answer: understandable without seeing the source.
-- Prefer cards that test recall of what the material emphasizes (definitions,
-  contrasts, mechanisms, numbers, lists).
+- Front is a specific question or prompt. Vary the angle across cards:
+  definitions, cause-and-effect, contrasts, mechanisms, numbers, exceptions.
+  Never "What is discussed in this section?" or yes/no questions.
+- Back starts with the direct answer in one sentence, then at most one short
+  clarifying line. Understandable without seeing the source.
+- Prioritize what the material emphasizes and what exams ask about.
+- Keep English terms and abbreviations untranslated even in non-English text.
 - No cards about navigation, figure references, or the document itself.
 ${language ? `- Write both front and back in ${language}.` : '- Write in the same language as the material.'}
 Return ONLY a JSON array, no prose, no code fences:
-[{"front": "...", "back": "...", "tags": ["..."]}]`;
+[{"front": "...", "back": "...", "tags": ["1-3 topic tags"]}]`;
 
-const CLOZE_PROMPT = (language) => `You turn study material into Anki CLOZE flashcards.
+const CLOZE_PROMPT = (language) => `You turn study material into Anki CLOZE flashcards for exam preparation.
 Rules for every card:
 - The front MUST contain at least one Anki cloze deletion like {{c1::answer}}.
-- Keep the surrounding sentence intact so the deletion is answerable.
+- Keep the surrounding sentence intact so the deletion is answerable. Delete
+  the exam-relevant words (terms, numbers, names), never filler.
 - One concept per card; number each deletion c1, c2 ... in order of appearance.
 - back is a short extra note (hint or clarification); use "" when nothing helps.
+- Keep English terms and abbreviations untranslated even in non-English text.
 - No cards about navigation, figure references, or the document itself.
 ${language ? `- Write in ${language}.` : '- Write in the same language as the material.'}
 Return ONLY a JSON array, no prose, no code fences:
@@ -204,7 +209,18 @@ export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = n
     }
     const limited = rawCards.slice(0, cfg.maxCardsPerChunk);
     const { cards, dropped, duplicates } = normalizeCards(limited, cfg.style);
-    return { title: chunk.title, cards: cards.map((c) => ({ ...c, source: chunk.title || '' })), generated: cards.length, dropped, duplicates, cached };
+    // Source section rides along as a tag so Anki review can jump back to
+    // where the fact came from; tag-safe (no spaces) per Anki's tag rules.
+    const sourceTag = chunk.title ? chunk.title.replace(/\s+/g, '_').slice(0, 40) : null;
+    return {
+      title: chunk.title,
+      cards: cards.map((c) => ({
+        ...c,
+        source: chunk.title || '',
+        tags: sourceTag && !c.tags.includes(sourceTag) ? [...c.tags, sourceTag] : c.tags,
+      })),
+      generated: cards.length, dropped, duplicates, cached,
+    };
   });
 
   return {

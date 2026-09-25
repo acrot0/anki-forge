@@ -7,9 +7,23 @@
 <style>
   :root {
     --brand1: #4f46e5; --brand2: #7c3aed;
-    --bg: #f6f7fb; --card: #ffffff; --ink: #1e2233; --sub: #6b7280;
-    --line: #e5e7eb; --ok: #059669; --warn: #d97706; --err: #dc2626;
-    --radius: 14px; --shadow: 0 1px 3px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+    --bg: #f6f7fb; --card: #ffffff; --panel: #ffffff;
+    --ink: #1e2233; --sub: #6b7280; --line: #e5e7eb;
+    --ok: #059669; --warn: #d97706; --err: #dc2626;
+    --chip: #eef2ff; --chip-ink: #3730a3;
+    --radius: 16px;
+    --shadow: 0 1px 3px rgba(16,24,40,.05), 0 10px 30px rgba(16,24,40,.07);
+    --shadow-lg: 0 4px 12px rgba(79,70,229,.16), 0 16px 40px rgba(16,24,40,.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1117; --card: #171a23; --panel: #171a23;
+      --ink: #e7e9f0; --sub: #9aa1b2; --line: #262b38;
+      --chip: #1e2140; --chip-ink: #a5b4fc;
+      --shadow: 0 1px 3px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+      --shadow-lg: 0 4px 14px rgba(79,70,229,.25), 0 16px 44px rgba(0,0,0,.45);
+    }
+    body { background-image: radial-gradient(circle at 15% -10%, #1e1b4b 0%, transparent 45%), radial-gradient(circle at 90% -10%, #2e1065 0%, transparent 40%) !important; }
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -17,138 +31,195 @@
     background: var(--bg); color: var(--ink); min-height: 100vh;
     background-image: radial-gradient(circle at 15% -10%, #e0e7ff 0%, transparent 45%), radial-gradient(circle at 90% -10%, #ede9fe 0%, transparent 40%);
   }
-  header { max-width: 1100px; margin: 0 auto; padding: 28px 20px 8px; display: flex; align-items: center; gap: 12px; }
-  .logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--brand1), var(--brand2));
-          display: grid; place-items: center; color: #fff; font-size: 20px; box-shadow: var(--shadow); }
-  h1 { font-size: 20px; font-weight: 700; } h1 small { font-weight: 400; color: var(--sub); font-size: 13px; margin-left: 8px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 16px 20px 60px; display: grid; grid-template-columns: 5fr 6fr; gap: 20px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px 70px; }
+
+  /* hero */
+  .hero {
+    margin: 22px 0 20px; padding: 26px 28px; border-radius: 20px; color: #fff; position: relative; overflow: hidden;
+    background: linear-gradient(120deg, var(--brand1), var(--brand2) 60%, #a855f7);
+    box-shadow: var(--shadow-lg);
+    animation: heroIn .6s cubic-bezier(.2,.7,.3,1) both;
+  }
+  .hero::after { content: ""; position: absolute; inset: 0;
+    background: radial-gradient(circle at 85% 20%, rgba(255,255,255,.25), transparent 45%); pointer-events: none; }
+  .hero h1 { font-size: 24px; letter-spacing: .3px; display: flex; align-items: center; gap: 10px; }
+  .hero p { margin-top: 8px; font-size: 13.5px; opacity: .92; }
+  .badges { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge { font-size: 12px; background: rgba(255,255,255,.16); backdrop-filter: blur(4px);
+           border: 1px solid rgba(255,255,255,.25); padding: 4px 11px; border-radius: 99px; }
+  .ankiline { display: flex; align-items: center; gap: 8px; font-size: 12.5px; margin-top: 12px; opacity: .95; }
+  .dot { width: 8px; height: 8px; border-radius: 99px; background: rgba(255,255,255,.5); }
+  .dot.ok { background: #6ee7b7; box-shadow: 0 0 8px #6ee7b7; } .dot.bad { background: #fca5a5; }
+
+  main { display: grid; grid-template-columns: 5fr 6fr; gap: 20px; }
   @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
-  .panel { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px; }
-  .panel h2 { font-size: 14px; color: var(--sub); font-weight: 600; letter-spacing: .4px; margin-bottom: 14px; text-transform: uppercase; }
+  .panel { background: var(--panel); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px;
+           animation: fadeUp .55s cubic-bezier(.2,.7,.3,1) both; }
+  .panel.right { animation-delay: .12s; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes heroIn { from { opacity: 0; transform: translateY(-10px) scale(.985); } to { opacity: 1; transform: none; } }
+
+  .panel h2 { font-size: 13px; color: var(--sub); font-weight: 700; letter-spacing: .8px; margin-bottom: 14px; text-transform: uppercase; }
   label { display: block; font-size: 13px; font-weight: 600; margin: 14px 0 6px; }
   input[type=text], input[type=password], input[type=number], select {
     width: 100%; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
-    font-size: 14px; background: #fafafa; transition: border .15s, box-shadow .15s; outline: none;
+    font-size: 14px; background: var(--bg); color: var(--ink); transition: border .15s, box-shadow .15s; outline: none;
   }
-  input:focus, select:focus { border-color: var(--brand1); box-shadow: 0 0 0 3px #e0e7ff; background: #fff; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  input:focus, select:focus { border-color: var(--brand1); box-shadow: 0 0 0 3px rgba(79,70,229,.15); background: var(--card); }
+
   .drop {
-    border: 2px dashed #c7d2fe; border-radius: var(--radius); padding: 34px 16px; text-align: center;
-    color: var(--sub); cursor: pointer; transition: all .18s; background: #fafaff;
+    border: 2px dashed color-mix(in srgb, var(--brand1) 35%, transparent); border-radius: var(--radius);
+    padding: 32px 16px; text-align: center; color: var(--sub); cursor: pointer; transition: all .2s; background: var(--bg);
   }
-  .drop:hover, .drop.over { border-color: var(--brand1); background: #eef2ff; color: var(--brand1); }
-  .drop .big { font-size: 30px; margin-bottom: 6px; }
+  .drop:hover, .drop.over { border-color: var(--brand1); background: var(--chip); color: var(--brand1); transform: scale(1.008); }
+  .drop .big { font-size: 28px; margin-bottom: 6px; transition: transform .2s; }
+  .drop:hover .big { transform: translateY(-3px) scale(1.1); }
   .drop input { display: none; }
   .files { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-  .filechip { display: flex; justify-content: space-between; align-items: center; background: #eef2ff; color: #3730a3;
-              padding: 8px 12px; border-radius: 9px; font-size: 13px; }
-  .filechip .meta { color: #6366f1; font-size: 12px; }
-  .seg { display: grid; grid-template-columns: 1fr 1fr; background: #f3f4f6; border-radius: 10px; padding: 4px; gap: 4px; }
-  .seg button { border: 0; background: transparent; padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--sub); }
-  .seg button.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .filechip { display: flex; justify-content: space-between; align-items: center; background: var(--chip); color: var(--chip-ink);
+              padding: 8px 12px; border-radius: 9px; font-size: 13px; animation: slideIn .3s ease both; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+  .filechip .meta { color: var(--sub); font-size: 12px; }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg); border-radius: 10px; padding: 4px; gap: 4px; border: 1.5px solid var(--line); }
+  .seg button { border: 0; background: transparent; padding: 8px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--sub); transition: all .15s; }
+  .seg button.on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; cursor: pointer;
     background: linear-gradient(135deg, var(--brand1), var(--brand2)); color: #fff; font-size: 15px; font-weight: 600;
-    padding: 13px 22px; border-radius: 11px; width: 100%; margin-top: 18px; transition: transform .1s, opacity .15s;
+    padding: 13px 22px; border-radius: 12px; width: 100%; margin-top: 18px; transition: transform .12s, box-shadow .15s, opacity .15s;
+    box-shadow: 0 4px 14px rgba(79,70,229,.3);
   }
-  .btn:hover { transform: translateY(-1px); } .btn:disabled { opacity: .5; cursor: default; transform: none; }
-  .btn.ghost { background: #fff; color: var(--ink); border: 1.5px solid var(--line); font-size: 14px; padding: 10px 16px; width: auto; }
+  .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(79,70,229,.4); }
+  .btn:active:not(:disabled) { transform: translateY(0) scale(.985); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn.ghost { background: var(--card); color: var(--ink); border: 1.5px solid var(--line); font-size: 13.5px; padding: 9px 15px; width: auto; box-shadow: none; }
   .btn.ghost:hover { border-color: var(--brand1); color: var(--brand1); }
   .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-  .hint { font-size: 12px; color: var(--sub); margin-top: 6px; }
-  .statusbox { margin-top: 14px; font-size: 13px; }
-  .bar { height: 10px; background: #eef2f7; border-radius: 99px; overflow: hidden; }
-  .bar i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--brand1), var(--brand2)); transition: width .3s; }
+  .hint { font-size: 12px; color: var(--sub); margin-top: 8px; line-height: 1.5; }
+
+  .statusbox { margin-top: 14px; }
+  .bar { height: 10px; background: var(--bg); border-radius: 99px; overflow: hidden; position: relative; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 99px; position: relative;
+           background: linear-gradient(90deg, var(--brand1), var(--brand2)); transition: width .35s cubic-bezier(.2,.7,.3,1); }
+  .bar i::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+    background-size: 200% 100%; animation: flow 1.4s linear infinite; }
+  @keyframes flow { from { background-position: 200% 0; } to { background-position: -60% 0; } }
   .barwrap { display: flex; align-items: center; gap: 10px; }
-  .pct { font-size: 13px; font-weight: 700; color: var(--brand1); min-width: 44px; text-align: right; }
+  .pct { font-size: 13px; font-weight: 800; color: var(--brand1); min-width: 44px; text-align: right; }
   .chunks { margin-top: 10px; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
-  .chunkline { font-size: 12px; color: var(--sub); display: flex; gap: 8px; align-items: baseline; }
-  .chunkline .t { color: var(--ink); font-weight: 600; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .cards { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-height: 420px; overflow-y: auto; }
-  .card3 { border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; background: #fcfcff; }
-  .card3 .q { font-weight: 600; font-size: 13px; margin-bottom: 6px; }
-  .card3 .a { font-size: 13px; color: #374151; border-top: 1px dashed var(--line); padding-top: 6px; }
-  .card3 .tags { margin-top: 6px; } .card3 .tags span {
-    font-size: 11px; background: #eef2ff; color: #4f46e5; border-radius: 6px; padding: 2px 7px; margin-right: 4px; }
-  .banner { margin-top: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px; display: none; }
-  .banner.err { background: #fef2f2; color: var(--err); display: block; }
-  .banner.ok { background: #ecfdf5; color: var(--ok); display: block; }
-  .ankiline { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--sub); }
-  .dot { width: 8px; height: 8px; border-radius: 99px; background: #9ca3af; } .dot.ok { background: var(--ok); } .dot.bad { background: var(--err); }
-  .empty { color: #9ca3af; text-align: center; padding: 60px 10px; font-size: 14px; }
+  .chunkline { font-size: 12px; color: var(--sub); display: flex; gap: 8px; align-items: baseline; animation: slideIn .25s ease both; }
+  .chunkline .t { color: var(--ink); font-weight: 600; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .banner { padding: 10px 14px; border-radius: 10px; font-size: 13px; display: none; margin-bottom: 12px; animation: fadeUp .3s ease both; }
+  .banner.err { background: rgba(220,38,38,.1); color: var(--err); display: block; }
+  .banner.ok { background: rgba(5,150,105,.1); color: var(--ok); display: block; }
+
+  /* flashcards: 3D flip */
+  .cards { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-height: 440px; overflow-y: auto; padding: 2px; }
+  .card3 { perspective: 900px; height: 128px; animation: cardIn .4s cubic-bezier(.2,.7,.3,1) both; }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: none; } }
+  .card3 .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2,.7,.3,1); cursor: pointer; }
+  .card3.flip .inner { transform: rotateY(180deg); }
+  .card3 .face {
+    position: absolute; inset: 0; backface-visibility: hidden; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; background: var(--card); display: flex; flex-direction: column; overflow: hidden;
+  }
+  .card3 .face .tagrow { margin-top: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+  .card3 .face .tagrow span { font-size: 10.5px; background: var(--chip); color: var(--chip-ink); border-radius: 6px; padding: 2px 8px; }
+  .card3 .face .k { font-size: 10.5px; color: var(--sub); letter-spacing: .6px; margin-bottom: 6px; font-weight: 700; }
+  .card3 .face .q { font-weight: 600; font-size: 13px; line-height: 1.45; overflow: hidden; }
+  .card3 .face.back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--chip), var(--card)); }
+  .card3 .face.back .a { font-size: 12.5px; color: var(--ink); line-height: 1.5; overflow: hidden; }
+  .card3 .face .flipicon { position: absolute; top: 10px; right: 12px; font-size: 11px; color: var(--sub); }
+  .skeletons { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .skel { height: 128px; border-radius: 12px; background: var(--bg); position: relative; overflow: hidden; border: 1px solid var(--line); }
+  .skel::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(100deg, transparent 30%, rgba(128,128,160,.18) 50%, transparent 70%);
+    background-size: 200% 100%; animation: flow 1.4s linear infinite; }
+  .empty { color: var(--sub); text-align: center; padding: 46px 10px; font-size: 14px; }
+  .empty .art { font-size: 40px; margin-bottom: 12px; filter: grayscale(.3); animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  .statrow { display: flex; gap: 18px; margin-top: 10px; }
+  .stat { flex: 1; background: var(--bg); border-radius: 12px; padding: 12px 14px; text-align: center; }
+  .stat b { font-size: 22px; display: block; color: var(--brand1); }
+  .stat span { font-size: 11.5px; color: var(--sub); }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">⚒</div>
-  <h1>anki-forge<small>讲义、教材、单词表 → Anki 卡组</small></h1>
-</header>
-<main>
-  <section class="panel">
-    <h2>1 · 选择材料</h2>
-    <div class="drop" id="drop">
-      <div class="big">📂</div>
-      <div><b>拖拽文件到这里</b>，或点击选择</div>
-      <div class="hint">支持 PDF / PPTX / DOCX / XLSX / MD / TXT，可多选</div>
-      <input type="file" id="file" multiple accept=".pdf,.pptx,.docx,.xlsx,.md,.markdown,.txt">
+<div class="wrap">
+  <div class="hero">
+    <h1>⚒ anki-forge <span style="font-weight:400;font-size:15px;opacity:.9">讲义、教材、单词表 → Anki 卡组</span></h1>
+    <p>全程本地处理：文件不上传服务器，只有卡片内容发给你自己选的 AI 服务商。</p>
+    <div class="badges">
+      <span class="badge">PDF · PPT · Word · Excel · MD · TXT</span>
+      <span class="badge">问答卡 · 填空卡</span>
+      <span class="badge">本地缓存 · 重跑免费</span>
     </div>
-    <div class="files" id="files"></div>
+    <div class="ankiline" id="ankiline"><span class="dot"></span> 正在检查 Anki 连接…</div>
+  </div>
 
-    <h2 style="margin-top:22px">2 · 设置</h2>
-    <label>目标牌组（:: 分级）</label>
-    <input type="text" id="deck" placeholder="考研::政治">
-    <div class="row">
-      <div><label>服务商</label><select id="provider"></select></div>
-      <div><label>模型</label><input type="text" id="model" placeholder="deepseek-chat"></div>
-    </div>
-    <label>API Key</label>
-    <input type="password" id="key" placeholder="仅本次使用，不落盘">
-    <label>卡片类型</label>
-    <div class="seg" id="style">
-      <button data-v="basic" class="on">问答卡</button>
-      <button data-v="cloze">填空卡 (Cloze)</button>
-    </div>
-    <div class="row">
-      <div><label>每节最多卡片数</label><input type="number" id="maxcards" value="10" min="1" max="50"></div>
-      <div><label>并发数</label><input type="number" id="conc" value="4" min="1" max="12"></div>
-    </div>
-    <button class="btn" id="go">⚡ 生成卡片</button>
-    <div class="hint">生成使用本地缓存：同一材料重跑不再计费。API Key 只在内存中使用，不做任何存储。</div>
-  </section>
+  <main>
+    <section class="panel">
+      <h2>1 · 选择材料</h2>
+      <div class="drop" id="drop">
+        <div class="big">📂</div>
+        <div><b>拖拽文件到这里</b>，或点击选择</div>
+        <div class="hint">支持多选 · PDF 文字层 / PPTX / DOCX / XLSX / MD / TXT</div>
+        <input type="file" id="file" multiple accept=".pdf,.pptx,.docx,.xlsx,.md,.markdown,.txt">
+      </div>
+      <div class="files" id="files"></div>
 
-  <section class="panel">
-    <h2>3 · 结果</h2>
-    <div id="result">
-      <div class="empty">还没有生成任务<br><br>左侧选好文件和设置，点「生成卡片」</div>
-    </div>
-  </section>
-</main>
+      <h2 style="margin-top:22px">2 · 设置</h2>
+      <label>目标牌组（:: 分级）</label>
+      <input type="text" id="deck" placeholder="考研::政治">
+      <div class="row">
+        <div><label>服务商</label><select id="provider"></select></div>
+        <div><label>模型</label><input type="text" id="model" placeholder="deepseek-chat"></div>
+      </div>
+      <label>API Key</label>
+      <input type="password" id="key" placeholder="仅本次使用，不落盘">
+      <label>卡片类型</label>
+      <div class="seg" id="style">
+        <button data-v="basic" class="on">问答卡</button>
+        <button data-v="cloze">填空卡 (Cloze)</button>
+      </div>
+      <div class="row">
+        <div><label>每节最多卡片数</label><input type="number" id="maxcards" value="10" min="1" max="50"></div>
+        <div><label>并发数</label><input type="number" id="conc" value="4" min="1" max="12"></div>
+      </div>
+      <button class="btn" id="go">⚡ 生成卡片</button>
+      <div class="hint">API Key 只在内存中使用，不做任何存储。同一材料重复生成走本地缓存，不重复计费。</div>
+    </section>
+
+    <section class="panel right">
+      <h2>3 · 结果</h2>
+      <div id="result"><div class="empty"><div class="art">🗂️</div>还没有生成任务<br><br>左侧选好文件和设置，点「生成卡片」<br><span style="font-size:12px">生成后点卡片可翻面查看答案</span></div></div>
+    </section>
+  </main>
+</div>
 <script>
 const $ = (id) => document.getElementById(id);
-let FILES = [];      // [{name, dataBase64}]
+let FILES = [];
 let STYLE = 'basic';
-let JOB = null;      // {id, total}
+let JOB = null;
 let POLL = null;
 
-// providers
 fetch('/api/providers').then(r => r.json()).then(p => {
   $('provider').innerHTML = Object.entries(p).map(([k, v]) =>
-    `<option value="${k}">${k}（${v.hint}）</option>`).join('');
+    '<option value="' + k + '">' + k + '（' + v.hint + '）</option>').join('');
   $('provider').onchange = () => { $('model').value = p[$('provider').value].hint; };
   $('provider').onchange();
 });
 
-// anki connectivity dot
 fetch('/api/check').then(r => r.json()).then(c => {
-  const dot = document.createElement('div');
-  dot.className = 'ankiline';
-  dot.innerHTML = `<span class="dot ${c.ok ? 'ok' : 'bad'}"></span>` +
-    (c.ok ? `Anki 已连接（协议 v${c.version}）— 可直接写入牌组`
-          : 'Anki 未运行 — 仍可导出 .apkg 文件导入');
-  document.querySelector('header').after(dot);
+  $('ankiline').innerHTML = '<span class="dot ' + (c.ok ? 'ok' : 'bad') + '"></span>' +
+    (c.ok ? 'Anki 已连接（协议 v' + c.version + '）— 生成后可一键写入牌组'
+          : 'Anki 未运行 — 仍可下载 .apkg 文件，双击导入');
 });
 
-// drop zone
 const drop = $('drop');
 drop.onclick = () => $('file').click();
 drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
@@ -167,11 +238,10 @@ function addFiles(list) {
 }
 function renderFiles() {
   $('files').innerHTML = FILES.map((f, i) =>
-    `<div class="filechip"><span>${f.name}</span><span class="meta">${(f.bytes/1024).toFixed(0)} KB
-     <a href="#" onclick="FILES.splice(${i},1);renderFiles();return false" style="color:#ef4444"> ✕</a></span></div>`).join('');
+    '<div class="filechip"><span>' + esc(f.name) + '</span><span class="meta">' + (f.bytes/1024).toFixed(0) + ' KB' +
+    ' <a href="#" onclick="FILES.splice(' + i + ',1);renderFiles();return false" style="color:#ef4444"> ✕</a></span></div>').join('');
 }
 
-// style segment
 $('style').onclick = (e) => {
   if (e.target.dataset.v) {
     STYLE = e.target.dataset.v;
@@ -182,12 +252,11 @@ $('style').onclick = (e) => {
 $('go').onclick = async () => {
   if (FILES.length === 0) return banner('请先选择至少一个文件', 'err');
   const deck = $('deck').value.trim() || 'Imported';
-  if (!$('key').value.trim()) return banner('请填写 API Key（服务商控制台获取）', 'err');
+  if (!$('key').value.trim()) return banner('请填写 API Key（在服务商控制台获取）', 'err');
   $('go').disabled = true;
-  banner('');
   showProgress();
   try {
-    let combined = null;
+    let last = null;
     for (const f of FILES) {
       const res = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -198,10 +267,9 @@ $('go').onclick = async () => {
         }) });
       const j = await res.json();
       if (j.error) throw new Error(j.error);
-      // multiple files: merge jobs by running the last one as the poll target
-      combined = j;
+      last = j;
     }
-    JOB = combined;
+    JOB = last;
     POLL = setInterval(poll, 900);
   } catch (e) {
     banner(e.message, 'err');
@@ -216,9 +284,9 @@ async function poll() {
   $('bar').style.width = pct + '%';
   $('pct').textContent = pct + '%';
   $('chunklist').innerHTML = (j.perChunk || []).map(c =>
-    `<div class="chunkline"><span>${c.error ? '⚠️' : c.cached ? '⚡' : '✅'}</span>
-     <span class="t">${c.title || '(未命名)'}</span>
-     <span>${c.error ? c.error : c.generated + ' 张' + (c.cached ? '（缓存）' : '')}</span></div>`).join('');
+    '<div class="chunkline"><span>' + (c.error ? '⚠️' : c.cached ? '⚡' : '✅') + '</span>' +
+    '<span class="t">' + esc(c.title || '(未命名)') + '</span>' +
+    '<span>' + (c.error ? esc(c.error) : c.generated + ' 张' + (c.cached ? '（缓存）' : '')) + '</span></div>').join('');
   if (j.status === 'error') { clearInterval(POLL); $('go').disabled = false; return banner(j.error, 'err'); }
   if (j.status !== 'done') return;
   clearInterval(POLL);
@@ -228,19 +296,26 @@ async function poll() {
 
 function renderCards(j) {
   const n = j.cards.length;
+  const failed = (j.perChunk || []).filter(c => c.error).length;
   $('result').innerHTML =
-    `<div class="banner ok">生成完成：${n} 张卡片（${j.done}/${j.total} 节）</div>
-     <div class="barwrap" style="margin-top:12px"><div class="bar" style="flex:1"><i style="width:100%"></i></div><span class="pct">100%</span></div>
-     <div class="actions">
-       <button class="btn ghost" id="dl">⬇ 下载 .apkg</button>
-       <button class="btn ghost" id="tsv">导出 TSV</button>
-       <button class="btn ghost" id="toanki">＋ 写入 Anki</button>
-     </div>
-     <div id="ankiresult"></div>
-     <div class="cards">${j.cards.map(c =>
-       `<div class="card3"><div class="q">${esc(c.front)}</div><div class="a">${esc(c.back) || '<i style="color:#9ca3af">（无补充）</i>'}</div>
-        ${c.tags && c.tags.length ? `<div class="tags">${c.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</div>`).join('')}
-     </div>`;
+    '<div class="banner ok">✨ 生成完成：' + n + ' 张卡片（' + j.done + '/' + j.total + ' 节' + (failed ? '，' + failed + ' 节失败' : '') + '）</div>' +
+    '<div class="statrow"><div class="stat"><b>' + n + '</b><span>卡片总数</span></div>' +
+    '<div class="stat"><b>' + j.total + '</b><span>章节</span></div>' +
+    '<div class="stat"><b>' + (j.perChunk || []).filter(c => c.cached).length + '</b><span>缓存命中</span></div></div>' +
+    '<div class="actions">' +
+    '<button class="btn ghost" id="dl">⬇ 下载 .apkg</button>' +
+    '<button class="btn ghost" id="tsv">导出 TSV</button>' +
+    '<button class="btn ghost" id="toanki">＋ 写入 Anki</button></div>' +
+    '<div id="ankiresult"></div>' +
+    '<div class="hint" style="margin-top:12px">点击卡片翻面看答案 · 来源章节已写入标签</div>' +
+    '<div class="cards">' + j.cards.map((c, i) =>
+      '<div class="card3" style="animation-delay:' + Math.min(i * 40, 600) + 'ms" onclick="this.classList.toggle(\'flip\')">' +
+      '<div class="inner">' +
+      '<div class="face front"><div class="k">Q</div><div class="q">' + esc(c.front) + '</div>' +
+      '<div class="tagrow">' + (c.tags || []).map(t => '<span>' + esc(t) + '</span>').join('') + '<span class="flipicon">↻ 翻面</span></div></div>' +
+      '<div class="face back"><div class="k">A</div><div class="a">' + (esc(c.back) || '<i style="color:#9ca3af">（无补充）</i>') + '</div>' +
+      '<div class="tagrow">' + (c.source ? '<span>📍 ' + esc(c.source) + '</span>' : '') + '<span class="flipicon">↻ 翻面</span></div></div>' +
+      '</div></div>').join('') + '</div>';
   $('dl').onclick = () => download('apkg');
   $('tsv').onclick = () => download('tsv');
   $('toanki').onclick = async () => {
@@ -248,9 +323,9 @@ function renderCards(j) {
       const r = await (await fetch('/api/anki', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ jobId: JOB.id, deck: $('deck').value.trim() }) })).json();
       $('ankiresult').innerHTML = r.error
-        ? `<div class="banner err">${esc(r.error)}</div>`
-        : `<div class="banner ok">已写入 Anki：新增 ${r.added} 张，跳过重复 ${r.duplicates} 张</div>`;
-    } catch (e) { $('ankiresult').innerHTML = `<div class="banner err">${esc(e.message)}</div>`; }
+        ? '<div class="banner err" style="display:block">' + esc(r.error) + '</div>'
+        : '<div class="banner ok" style="display:block">已写入 Anki：新增 ' + r.added + ' 张，跳过重复 ' + r.duplicates + ' 张</div>';
+    } catch (e) { $('ankiresult').innerHTML = '<div class="banner err" style="display:block">' + esc(e.message) + '</div>'; }
   };
 }
 
@@ -268,9 +343,10 @@ async function download(fmt) {
 
 function showProgress() {
   $('result').innerHTML =
-    `<div class="banner ok" style="display:block">生成中…</div>
-     <div class="barwrap" style="margin-top:12px"><div class="bar" style="flex:1"><i id="bar"></i></div><span class="pct" id="pct">0%</span></div>
-     <div class="chunks" id="chunklist"></div>`;
+    '<div class="banner ok" style="display:block">生成中… 已选 ' + FILES.length + ' 个文件</div>' +
+    '<div class="barwrap"><div class="bar" style="flex:1"><i id="bar"></i></div><span class="pct" id="pct">0%</span></div>' +
+    '<div class="chunks" id="chunklist"></div>' +
+    '<div class="skeletons">' + Array(4).fill('<div class="skel"></div>').join('') + '</div>';
 }
 function banner(msg, cls) {
   const b = document.createElement('div');

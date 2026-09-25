@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-09-25
+
+### Added
+
+- **Card content quality** — the generation prompts now steer toward
+  exam-oriented angles (definition / cause / contrast / mechanism / numbers /
+  exceptions), demand a direct-answer-first back, and keep English terms
+  untranslated inside non-English text. Each card carries its source section
+  as an Anki tag, so review can trace a fact back to where it came from.
+- **UI redesign**: gradient hero with capability badges, dark mode following
+  the system, stat tiles (cards / sections / cache hits), and per-chunk
+  status with cache-hit marks.
+- **Flashcard flip preview** — click a card to 3D-flip it and see the answer
+  plus its source section, mirroring how Anki will quiz you.
+- **Motion pass** — staggered panel/card entrances, flowing progress-bar
+  shimmer, skeleton placeholders while generating, hover lifts, and an
+  animated empty state.
+
 ## [0.6.0] — 2026-09-25
 
 ### Added
