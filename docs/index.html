@@ -134,6 +134,17 @@
   .done-box .big { font-size: 19px; font-weight: 650; color: var(--primary); }
   .done-box .sub { font-size: 13px; color: var(--muted-fg); margin-top: 8px; line-height: 1.8; }
   .fade-in { animation: fade .25s both; }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #101012; --foreground: #f4f4f5;
+      --muted: #1b1b1f; --muted-fg: #a1a1aa;
+      --border: #27272a; --accent: #1f1f23;
+      --ring: rgba(16,185,129,.28);
+    }
+    textarea { background: var(--background); }
+    .app { box-shadow: 0 0 0 1px var(--border); }
+    .citem .qnum { background: rgba(16,185,129,.12); }
+  }
 </style>
 </head>
 <body>
@@ -543,6 +554,19 @@ document.addEventListener('keydown', (e) => {
   if (['1', '2', '3', '4'].includes(e.key) && $('oback-side').style.display === 'block') { e.preventDefault(); grade(Number(e.key)); }
 });
 
+// 交互层存活自检：0.23 的教训——一个 id 丢失会让页面「看起来正常但全死」。
+// 加载后自查关键节点与 handler，失败就挂出显眼的错误条而不是静默。
+(function selfCheck() {
+  const need = ['text', 'go', 'search', 'study-go', 'ocard', 'overlay', 'clist', 'msg'];
+  const missing = need.filter((id) => !document.getElementById(id));
+  const deadHandlers = [$('go').onclick, $('study-go').onclick, $('filebtn').onclick].some((h) => h === null);
+  if (missing.length || deadHandlers) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;z-index:99;background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca;padding:10px 16px;font-size:13px;font-weight:600';
+    bar.textContent = '⚠ 界面初始化异常（' + (missing.length ? '缺少 ' + missing.join(', ') : '事件绑定失败') + '）——请刷新页面，若持续出现请到 GitHub 反馈';
+    document.body.prepend(bar);
+  }
+})();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

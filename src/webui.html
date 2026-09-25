@@ -316,6 +316,32 @@ document.addEventListener('keydown', (e) => {
     grade(Number(e.key));
   }
 });
+// 学习卡滑动评分（与 demo 同款 pointer 手势）：答案未翻出时左右滑打分
+(function attachSwipe() {
+  const card = $('ocard');
+  let startX = null, dx = 0;
+  card.addEventListener('pointerdown', (e) => {
+    if ($('oback-side').style.display === 'block') return;
+    startX = e.clientX; dx = 0; card.style.transition = 'none';
+  });
+  card.addEventListener('pointermove', (e) => {
+    if (startX === null) return;
+    dx = e.clientX - startX;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.04 + 'deg)';
+  });
+  card.addEventListener('pointerup', (e) => {
+    if (startX === null) return;
+    card.style.transition = 'transform .25s';
+    if (Math.abs(dx) > 90) {
+      const dir = dx > 0 ? 1 : -1;
+      card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 22 + 'deg)';
+      setTimeout(() => { card.style.transform = ''; grade(dir > 0 ? 3 : 1); }, 160);
+    } else {
+      card.style.transform = '';
+    }
+    startX = null;
+  });
+})();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

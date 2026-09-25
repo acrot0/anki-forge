@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-09-25
+
+### Added
+
+- **Interaction self-check** — after load the page verifies its own key
+  nodes and handlers, and shows a prominent error bar instead of silently
+  dying if initialization broke (the 0.23 failure class, now defended).
+- **Dark mode follows the system** in the demo page (zinc dark palette).
+- **Swipe grading in the full UI** — the webui study card now supports the
+  same left/right swipe as the demo (pointer events, front side only).
+
 ## [0.23.0] — 2026-09-25
 
 ### Fixed
