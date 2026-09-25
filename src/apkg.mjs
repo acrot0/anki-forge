@@ -106,14 +106,34 @@ const nowSecs = () => Math.floor(Date.now() / 1000);
 /** URL-safe random guid, same idea as genanki's but without base91. */
 const newGuid = () => randomBytes(10).toString('base64url');
 
+const CARD_CSS = `
+.card {
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 19px; line-height: 1.55; text-align: center;
+  color: #1e2233; background: #f6f7fb; padding: 28px 18px;
+}
+.q { font-weight: 600; }
+hr#answer { border: 0; border-top: 2px dashed #c7d2fe; margin: 18px 30%; }
+.a { color: #374151; }
+.tags { margin-top: 18px; font-size: 12px; color: #6b7280; }
+.tags .tag { background: #eef2ff; color: #4f46e5; border-radius: 6px; padding: 2px 9px; margin: 0 3px; display: inline-block; }
+.cloze { color: #4f46e5; font-weight: 700; }
+.nightMode .card { color: #e7e9f0; background: #171a23; }
+.nightMode .a { color: #c7cbda; }
+.nightMode hr#answer { border-top-color: #3730a3; }
+.nightMode .tags .tag { background: #1e2140; color: #a5b4fc; }
+.nightMode .cloze { color: #a5b4fc; }`;
+
 function modelJson(mid, name, style, now) {
   const fields = style === 'cloze'
     ? ['Text', 'Extra']
     : ['Front', 'Back'];
-  const qfmt = style === 'cloze' ? '{{cloze:Text}}' : '{{Front}}';
+  const qfmt = style === 'cloze'
+    ? '<div class="q">{{cloze:Text}}</div>'
+    : '<div class="q">{{Front}}</div>';
   const afmt = style === 'cloze'
-    ? '{{cloze:Text}}<br>{{Extra}}'
-    : '{{FrontSide}}<hr id="answer">{{Back}}';
+    ? '<div class="q">{{cloze:Text}}</div><hr id="answer"><div class="a">{{Extra}}</div><div class="tags">{{Tags}}</div>'
+    : '<div class="q">{{Front}}</div><hr id="answer"><div class="a">{{Back}}</div><div class="tags">{{Tags}}</div>';
   return {
     [mid]: {
       id: Number(mid),
@@ -123,6 +143,7 @@ function modelJson(mid, name, style, now) {
       usn: -1,
       sortf: 0,
       did: null,
+      css: CARD_CSS,
       tmpls: [{ name: 'Card 1', ord: 0, qfmt, afmt, bqfmt: '', bafmt: '', did: null }],
       flds: fields.map((f, ord) => ({
         name: f, ord, sticky: false, rtl: false, font: 'Arial', size: 20, media: [],

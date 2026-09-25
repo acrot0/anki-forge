@@ -65,6 +65,9 @@ describe('apkg export', () => {
       const model = Object.values(JSON.parse(db.prepare('SELECT models FROM col').get().models))[0];
       assert.equal(model.type, 1);
       assert.deepEqual(model.flds.map((f) => f.name), ['Text', 'Extra']);
+      assert.ok(model.css.includes('.nightMode'), 'dark-mode css must ship with the model');
+      assert.ok(model.tmpls[0].afmt.includes('class="a"'), 'structured answer markup');
+      assert.ok(model.tmpls[0].qfmt.includes('{{cloze:Text}}'), 'cloze template must use the cloze filter');
     } finally {
       db.close();
     }

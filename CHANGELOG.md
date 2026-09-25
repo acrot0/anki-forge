@@ -5,6 +5,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-09-25
+
+### Added
+
+- **In-Anki card styling** — generated decks now ship a styled notetype:
+  centered layout, dashed answer divider, tag chips, cloze highlighting, and
+  automatic dark mode via Anki's `nightMode` class. Review looks like the
+  app, not like a default template.
+
 ## [0.7.0] — 2026-09-25
 
 ### Added
