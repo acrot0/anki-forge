@@ -83,6 +83,15 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
+// FSRS 调度（ts-fsrs via jsdelivr ESM）。加载失败降级为简单两态——体验版
+// 的核心是先学起来，调度精度是加分项。进度存 localStorage，刷新不丢。
+let FSRS_LIB = null;
+import('https://cdn.jsdelivr.net/npm/ts-fsrs@5/+esm').then((m) => { FSRS_LIB = m; }).catch(() => {});
+const LS_KEY = 'anki-forge-demo-progress';
+function loadProgress() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
+function saveProgress(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch {} }
+let LAST_CARDS = [];
+let STUDY = null;
 
 const DEMOS = {
   words: { vocab: true, text: [
@@ -162,12 +171,23 @@ $('go').onclick = () => {
 };
 
 function render(cards) {
+  LAST_CARDS = cards;
   msg('✨ 抽出 ' + cards.length + ' 张卡片。点击卡片翻面看答案。');
+  if (!$('studybar')) {
+    const bar = document.createElement('div');
+    bar.id = 'studybar';
+    bar.className = 'chips';
+    bar.style.marginTop = '12px';
+    bar.innerHTML = '<button class="chip" id="study-go" style="border-color:var(--b1);color:var(--b1)">🎯 进入学习模式（FSRS 间隔重复）</button>';
+    $('cards').before(bar);
+    bar.querySelector('#study-go').onclick = openStudy;
+  }
   $('cards').innerHTML = cards.map((c, i) =>
     '<div class="card-toggle card bg-base-200 border border-base-300 stagger" style="animation-delay:' + Math.min(i * 35, 550) + 'ms" onclick="this.classList.toggle(\'shown\')">' +
     '<div class="face-a card-body p-4"><div class="text-[10px] font-extrabold tracking-widest text-primary">Q</div><div class="text-sm leading-relaxed">' + esc(c.front) + '</div><div class="mt-auto text-[10px] opacity-50 pt-2">↻ 点击看答案</div></div>' +
     '<div class="face-b card-body p-4 bg-primary text-primary-content rounded-2xl"><div class="text-[10px] font-extrabold tracking-widest">A</div><div class="text-sm leading-relaxed">' + esc(c.back).replace(/\n/g, '<br>') + '</div><div class="mt-auto text-[10px] opacity-70 pt-2">↻ 点击翻回</div></div>' +
     '</div>').join('');
+  $('studybtn').style.display = 'inline-flex';
   const tsv = cards.map((c) => c.front + '\t' + c.back.replace(/\n/g, ' ')).join('\n');
   $('howto').classList.remove('hidden');
   let dl = document.getElementById('dl');
@@ -190,6 +210,102 @@ function msg(m, isErr) {
 }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// ---------- 学习模式 overlay（FSRS 调度 + localStorage 持久化）----------
+function openStudy() {
+  if (LAST_CARDS.length === 0) return;
+  const progress = loadProgress();
+  const now = Date.now();
+  STUDY = {
+    cards: LAST_CARDS.map((c) => {
+      const key = 'k' + hash(c.front);
+      const saved = progress[key];
+      return {
+        front: c.front, back: c.back, key,
+        state: saved ? saved.state : 0, due: saved ? saved.due : 0,
+        reps: saved ? saved.reps : 0, fsrsCard: null,
+      };
+    }),
+    queue: [], index: 0, done: 0, again: 0,
+  };
+  // 到期优先：新卡与到期卡排前
+  STUDY.queue = STUDY.cards
+    .filter((c) => c.due <= now || c.state === 0)
+    .sort((a, b) => a.due - b.due);
+  if (STUDY.queue.length === 0) {
+    // 全部未到期：复习到期最早的一批（提前学不惩罚）
+    STUDY.queue = [...STUDY.cards].sort((a, b) => a.due - b.due).slice(0, 10);
+  }
+  renderStudyOverlay();
+}
+function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h).toString(36); }
+function renderStudyOverlay() {
+  const remaining = STUDY.queue.length - STUDY.index;
+  const el = document.getElementById('study-overlay') || (() => {
+    const d = document.createElement('div');
+    d.id = 'study-overlay';
+    d.style.cssText = 'position:fixed;inset:0;z-index:60;background:var(--bg,#0a0b10);overflow-y:auto';
+    document.body.appendChild(d);
+    return d;
+  })();
+  if (STUDY.index >= STUDY.queue.length) {
+    const p = loadProgress();
+    const learned = Object.values(p).filter((x) => x.reps > 0).length;
+    el.innerHTML = '<div style="max-width:520px;margin:12vh auto;text-align:center;padding:0 20px">' +
+      '<div style="font-size:40px;color:var(--b1);font-weight:800">&#10003;</div>' +
+      '<h2 style="margin-top:12px">本轮完成</h2>' +
+      '<p style="color:var(--sub);margin-top:8px">复习 ' + STUDY.done + ' 张（标忘 ' + STUDY.again + ' 张）。' +
+      '进度已保存在本机——下次打开继续。<br>总学习卡片：' + learned + '</p>' +
+      '<button class="chip" style="margin-top:16px" onclick="document.getElementById(\'study-overlay\').remove()">返回</button></div>';
+    return;
+  }
+  const c = STUDY.queue[STUDY.index];
+  el.innerHTML = '<div style="max-width:560px;margin:8vh auto;padding:0 20px">' +
+    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:10px">' +
+    '<span>第 ' + (STUDY.index + 1) + ' / ' + STUDY.queue.length + ' 张</span>' +
+    '<span style="cursor:pointer" onclick="document.getElementById(\'study-overlay\').remove()">✕ 退出</span></div>' +
+    '<div id="study-card" class="card bg-base-100 border border-base-300" style="min-height:150px;display:flex;flex-direction:column;justify-content:center">' +
+    '<div style="text-align:center;padding:20px"><div style="font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:10px">' +
+    (c.state === 0 ? '新卡片' : '复习') + '</div>' +
+    '<div id="s-front" style="font-size:18px;font-weight:650;cursor:pointer" onclick="this.parentElement.querySelector(\'#s-back\').style.display=\'block\';this.style.display=\'none\'">' + esc(c.front) + '</div>' +
+    '<div id="s-back" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);text-align:left;font-size:15px;line-height:1.6">' + esc(c.back) + '</div>' +
+    '</div></div>' +
+    '<div id="s-grades" style="display:none" class="chips">' +
+    '<button class="chip" onclick="sgrade(1)" style="border-color:rgba(248,113,113,.4)">重来</button>' +
+    '<button class="chip" onclick="sgrade(2)" style="border-color:rgba(251,191,36,.4)">困难</button>' +
+    '<button class="chip" onclick="sgrade(3)" style="border-color:rgba(52,211,153,.4)">良好</button>' +
+    '<button class="chip" onclick="sgrade(4)" style="border-color:rgba(129,140,248,.4)">简单</button>' +
+    '</div>' +
+    '<div class="hint" style="margin-top:10px">先回想，再显示答案评分。FSRS 决定下次出现时间。</div></div>';
+  const gbtns = el.querySelector('#s-grades');
+  el.querySelector('#s-front').addEventListener('click', () => {
+    el.querySelector('#s-back').style.display = 'block';
+    gbtns.style.display = 'flex';
+  });
+}
+function sgrade(rating) {
+  const c = STUDY.queue[STUDY.index];
+  if (rating === 1) STUDY.again++;
+  STUDY.done++; STUDY.index++;
+  const progress = loadProgress();
+  const entry = progress[c.key] || { state: 0, due: 0, reps: 0 };
+  entry.reps = entry.reps + 1;
+  if (FSRS_LIB) {
+    try {
+      const { fsrs, generatorParameters, createEmptyCard, Rating } = FSRS_LIB;
+      const sched = fsrs(generatorParameters({ enable_fuzz: true }));
+      const fsrsCard = entry.fsrsCard || createEmptyCard(new Date());
+      const next = sched.next(fsrsCard, new Date(), rating);
+      entry.fsrsCard = { due: next.card.due.toISOString(), stability: next.card.stability, state: next.card.state };
+      entry.due = next.card.due.getTime();
+      entry.state = next.card.state;
+    } catch { entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 6 * 3600000 : 86400000); }
+  } else {
+    entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 6 * 3600000 : 86400000);
+  }
+  progress[c.key] = entry;
+  saveProgress(progress);
+  renderStudyOverlay();
+}
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

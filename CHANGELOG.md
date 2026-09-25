@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.16.0] — 2026-09-25
+
+### Added
+
+- **Study mode in the web demo** — the browser experience now closes the
+  loop too: generate, then review cards in a full-screen session with FSRS
+  scheduling (ts-fsrs via ESM CDN, degrading to simple intervals offline)
+  and localStorage persistence.
+- **Study shortcuts** in the full UI: Space flips, 1-4 grade — the muscle
+  memory every serious Anki user has.
+- **Dark mode** follows the system in the full UI.
+
 ## [0.15.0] — 2026-09-25
 
 ### Added

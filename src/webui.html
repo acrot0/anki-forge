@@ -111,6 +111,14 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
+// 深色跟随系统：学习工具白天浅色护眼、夜间深色省力
+const applyTheme = () => {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.dataset.theme = dark ? 'dark' : 'corporate';
+  document.querySelector('meta[name=theme-color]').content = dark ? '#0b0f19' : '#f8fafc';
+};
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 let FILES = [];
 let STYLE = 'basic';
 let ENGINE = 'llm';
@@ -260,7 +268,7 @@ function renderStudy() {
     '<button class="btn btn-sm flex-col h-auto py-2 border-success/40 text-success hover:bg-success hover:text-white" onclick="grade(3)">' + I.check + '<span class="text-[10px]">良好</span></button>' +
     '<button class="btn btn-sm flex-col h-auto py-2 border-info/40 text-info hover:bg-info hover:text-white" onclick="grade(4)">' + I.star + '<span class="text-[10px]">简单</span></button>' +
     '</div>' +
-    '<div class="hint text-xs opacity-60 mt-2">先回想答案，再翻面评分。FSRS 会据此安排下次复习时间。</div>' +
+    '<div class="hint text-xs opacity-60 mt-2">键盘党：空格翻面，1/2/3/4 评分。FSRS 会据此安排下次复习时间。</div>' +
     '<div id="study-msg"></div>';
 }
 
@@ -291,6 +299,23 @@ async function download(fmt) {
 }
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// 学习快捷键：空格翻面、1-4 评分——刷卡效率的核心
+document.addEventListener('keydown', (e) => {
+  const sess = document.getElementById('study-session');
+  if (!sess || sess.classList.contains('hidden')) return;
+  const back = document.getElementById('card-back');
+  if (e.code === 'Space' && back && back.classList.contains('hidden')) {
+    e.preventDefault();
+    document.getElementById('card-front').classList.add('hidden');
+    back.classList.remove('hidden');
+    document.getElementById('gradebar').classList.remove('hidden');
+    return;
+  }
+  if (['1', '2', '3', '4'].includes(e.key) && back && !back.classList.contains('hidden')) {
+    e.preventDefault();
+    grade(Number(e.key));
+  }
+});
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
