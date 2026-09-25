@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { startStudy, getQueue, gradeCard, deckFile } from '../src/study.mjs';
 
 // study.mjs reads a fixed home dir; tests run against a temp HOME via env is
