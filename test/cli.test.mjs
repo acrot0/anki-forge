@@ -91,7 +91,7 @@ describe('wizard', () => {
   };
 
   test('unknown provider aborts after retries, listing the options each time', async () => {
-    const rl = answers('a.pdf', 'D', 'bad1', 'bad2', 'bad3');
+    const rl = answers('a.pdf', 'D', 'llm', 'bad1', 'bad2', 'bad3');
     await assert.rejects(wizard([], { rl }), /too many invalid provider answers/);
   });
 
@@ -104,7 +104,7 @@ describe('wizard', () => {
     // provider fixed on retry; then the flow proceeds into main() which
     // fails on the nonexistent file — a number exit code proves the wizard
     // got all the way through its questions and handed off.
-    const rl = answers('a.md', 'D', 'deepseekk', 'deepseek', 'deepseek-chat', 'k', 'basic', 'n');
+    const rl = answers('a.md', 'D', 'llm', 'deepseekk', 'deepseek', 'deepseek-chat', 'k', 'basic', 'n');
     const errs = [];
     const orig = console.error;
     console.error = (m) => errs.push(m);
@@ -201,7 +201,8 @@ describe('main', () => {
     } finally {
       console.error = orig;
     }
-    assert.ok(errs[0].includes('ENOENT'));
+    // errs[0] may be the informational no-key hint; the error must be there too
+    assert.ok(errs.some((e) => String(e).includes('ENOENT')));
   });
 
   test('import with an unsupported extension says which types exist', async () => {
@@ -213,6 +214,6 @@ describe('main', () => {
     } finally {
       console.error = orig;
     }
-    assert.match(errs[0], /unsupported file type/);
+    assert.ok(errs.some((e) => String(e).includes('unsupported file type')));
   });
 });

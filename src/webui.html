@@ -175,12 +175,20 @@
       <h2 style="margin-top:22px">2 · 设置</h2>
       <label>目标牌组（:: 分级）</label>
       <input type="text" id="deck" placeholder="考研::政治">
+      <label>生成引擎</label>
+      <div class="seg" id="engine">
+        <button data-v="llm" class="on">AI 生成（更聪明）</button>
+        <button data-v="local">本地引擎（免费离线）</button>
+      </div>
+      <div id="llmfields">
       <div class="row">
         <div><label>服务商</label><select id="provider"></select></div>
         <div><label>模型</label><input type="text" id="model" placeholder="deepseek-chat"></div>
       </div>
       <label>API Key</label>
       <input type="password" id="key" placeholder="仅本次使用，不落盘">
+      </div>
+      <div class="hint" id="localhint" style="display:none">本地引擎按「定义句 / 枚举 / 因果 / 数字」四种模式抽取，免费离线零门槛；材料结构越清晰效果越好。出什么卡一目了然，无幻觉。</div>
       <label>卡片类型</label>
       <div class="seg" id="style">
         <button data-v="basic" class="on">问答卡</button>
@@ -204,8 +212,18 @@
 const $ = (id) => document.getElementById(id);
 let FILES = [];
 let STYLE = 'basic';
+let ENGINE = 'llm';
 let JOB = null;
 let POLL = null;
+
+$('engine').onclick = (e) => {
+  if (e.target.dataset.v) {
+    ENGINE = e.target.dataset.v;
+    for (const b of $('engine').children) b.classList.toggle('on', b === e.target);
+    $('llmfields').style.display = ENGINE === 'local' ? 'none' : 'block';
+    $('localhint').style.display = ENGINE === 'local' ? 'block' : 'none';
+  }
+};
 
 fetch('/api/providers').then(r => r.json()).then(p => {
   $('provider').innerHTML = Object.entries(p).map(([k, v]) =>
@@ -242,6 +260,14 @@ function renderFiles() {
     ' <a href="#" onclick="FILES.splice(' + i + ',1);renderFiles();return false" style="color:#ef4444"> ✕</a></span></div>').join('');
 }
 
+$('engine').onclick = (e) => {
+  if (e.target.dataset.v) {
+    ENGINE = e.target.dataset.v;
+    for (const b of $('engine').children) b.classList.toggle('on', b === e.target);
+    $('llmfields').style.display = ENGINE === 'local' ? 'none' : 'block';
+    $('localhint').style.display = ENGINE === 'local' ? 'block' : 'none';
+  }
+};
 $('style').onclick = (e) => {
   if (e.target.dataset.v) {
     STYLE = e.target.dataset.v;
@@ -252,7 +278,7 @@ $('style').onclick = (e) => {
 $('go').onclick = async () => {
   if (FILES.length === 0) return banner('请先选择至少一个文件', 'err');
   const deck = $('deck').value.trim() || 'Imported';
-  if (!$('key').value.trim()) return banner('请填写 API Key（在服务商控制台获取）', 'err');
+  if (ENGINE === 'llm' && !$('key').value.trim()) return banner('请填写 API Key，或切换到「本地引擎」（免费无需 Key）', 'err');
   $('go').disabled = true;
   showProgress();
   try {
@@ -260,7 +286,7 @@ $('go').onclick = async () => {
     for (const f of FILES) {
       const res = await fetch('/api/generate', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          name: f.name, dataBase64: f.dataBase64, deck,
+          name: f.name, dataBase64: f.dataBase64, deck, engine: ENGINE,
           provider: $('provider').value, model: $('model').value.trim(),
           apiKey: $('key').value.trim(), style: STYLE,
           maxCards: +$('maxcards').value, concurrency: +$('conc').value,

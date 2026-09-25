@@ -21,6 +21,7 @@ import { writeApkgBytes } from './apkg.mjs';
 import { parseFile } from './parse.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
 import { startUi } from './webui.mjs';
+import { generateLocal } from './local-engine.mjs';
 
 const SUPPORTED_EXTS = ['.pdf', '.pptx', '.docx', '.xlsx', '.md', '.markdown', '.txt', ''];
 const SKIP_DIRS = new Set(['node_modules', '.git', '.venv', '__pycache__']);
@@ -75,6 +76,7 @@ export function parseArgs(argv, env = process.env) {
     exportFile: null,
     noCache: false,
     maxTotal: null,
+    engine: null,
     baseUrl: env.OPENAI_BASE_URL ?? null,
     model: env.OPENAI_MODEL ?? null,
     apiKey: env.OPENAI_API_KEY ?? null,
@@ -97,6 +99,7 @@ export function parseArgs(argv, env = process.env) {
     else if (a === '--no-cache') out.noCache = true;
     else if (a === '--concurrency') out.concurrency = Number(val());
     else if (a === '--max-total') out.maxTotal = Number(val());
+    else if (a === '--engine') out.engine = val();
     else if (a === '--base-url') out.baseUrl = val();
     else if (a === '--model') out.model = val();
     else if (a === '--api-key') out.apiKey = val();
@@ -132,6 +135,7 @@ export function toArgv(args) {
   if (args.noCache) argv.push('--no-cache');
   if (args.concurrency) argv.push('--concurrency', String(args.concurrency));
   if (args.maxTotal) argv.push('--max-total', String(args.maxTotal));
+  if (args.engine) argv.push('--engine', args.engine);
   if (args.ankiUrl !== DEFAULT_ANKI_URL) argv.push('--anki-url', args.ankiUrl);
   return argv;
 }
@@ -163,16 +167,24 @@ export async function wizard(argvIn, { rl = null } = {}) {
     out.deck = await ask('Deck name ("::" nests)', 'Imported');
 
     const names = Object.keys(PROVIDERS);
-    console.log(`  providers: ${names.join(', ')}`);
     for (let i = 0; i < 3; i++) {
-      out.provider = (await ask('Provider', 'deepseek')).toLowerCase();
-      if (PROVIDERS[out.provider]) break;
-      console.log(`  ! unknown provider — pick one of: ${names.join(', ')}`);
+      out.engine = (await ask('引擎: local = 规则抽取（免费离线）, llm = AI 生成（更聪明，需 Key）', 'llm')).toLowerCase();
+      if (['local', 'llm'].includes(out.engine)) break;
+      console.log('  ! engine must be local or llm');
     }
-    if (!PROVIDERS[out.provider]) throw new Error('too many invalid provider answers');
-    out.model = await ask('Model', PROVIDERS[out.provider].hint);
-    out.apiKey = await ask('API key (ENTER = $OPENAI_API_KEY)', process.env.OPENAI_API_KEY ?? '');
-    if (!out.apiKey && !PROVIDERS[out.provider].keyless) throw new Error('no API key');
+    if (!['local', 'llm'].includes(out.engine)) throw new Error('too many invalid engine answers');
+    if (out.engine === 'llm') {
+      console.log(`  providers: ${names.join(', ')}`);
+      for (let i = 0; i < 3; i++) {
+        out.provider = (await ask('Provider', 'deepseek')).toLowerCase();
+        if (PROVIDERS[out.provider]) break;
+        console.log(`  ! unknown provider — pick one of: ${names.join(', ')}`);
+      }
+      if (!PROVIDERS[out.provider]) throw new Error('too many invalid provider answers');
+      out.model = await ask('Model', PROVIDERS[out.provider].hint);
+      out.apiKey = await ask('API key (ENTER = $OPENAI_API_KEY)', process.env.OPENAI_API_KEY ?? '');
+      if (!out.apiKey && !PROVIDERS[out.provider].keyless) throw new Error('no API key');
+    }
     for (let i = 0; i < 3; i++) {
       out.style = (await ask('Card style: basic = Q/A, cloze = fill-in-the-blank', 'basic')).toLowerCase();
       if (['basic', 'cloze'].includes(out.style)) break;
@@ -200,6 +212,12 @@ async function runImport(args) {
   // Explicit flags must not be nulled out by absent ones: {...DEFAULTS, ...args}
   // in generateCards would otherwise see style: null and reject it.
   args.style = args.style ?? 'basic';
+  const engine = args.engine === 'local' ? 'local' : 'llm';
+  if (engine === 'llm') {
+    if (!args.apiKey) console.error('  no API key — pass --engine local for the keyless offline engine');
+  } else {
+    console.error('  local engine: rule-based extraction, no API key needed');
+  }
   applyProvider(args);
 
   const inputs = await expandInputs(args.files);
@@ -216,8 +234,8 @@ async function runImport(args) {
     return 1;
   }
 
-  console.error(`  ${allChunks.length} chunks → up to ${allChunks.length} LLM calls (up to ${args.concurrency ?? 4} in flight)`);
-  const cache = args.noCache ? null : await loadCache();
+  console.error(`  ${allChunks.length} chunks → ${engine === 'local' ? 'local extraction (free)' : `up to ${allChunks.length} LLM calls`} (up to ${args.concurrency ?? 4} in flight)`);
+  const cache = engine === 'llm' && !args.noCache ? await loadCache() : null;
   // Progress needs a terminal to redraw on; in a pipe it would just spam lines.
   const onProgress = process.stderr.isTTY
     ? (done, total) => {
@@ -227,7 +245,11 @@ async function runImport(args) {
         if (done === total) process.stderr.write('\n');
       }
     : null;
-  let { cards, perChunk } = await generateCards(allChunks, args, { cache, onProgress });
+  const runner = engine === 'local'
+    ? generateLocal(allChunks, args, { onProgress })
+    : generateCards(allChunks, args, { cache, onProgress });
+  let { cards, perChunk } = await runner;
+  if (cache) await cache.save();
   if (args.maxTotal && cards.length > args.maxTotal) {
     console.error(`  capped to ${args.maxTotal} cards (--max-total; was ${cards.length})`);
     cards = cards.slice(0, args.maxTotal);
@@ -302,6 +324,8 @@ Import options:
   --export <file>          export instead of writing to Anki: .apkg (shareable
                            deck file) or any other name → Anki-importable TSV
   --no-cache               re-call the LLM even if this exact section is cached
+  --engine local|llm       local = rule-based extraction (free, offline, no key);
+                           llm = AI generation (default, needs a key)
   --max-cards-per-chunk N  cap per section (default 10)
   --max-total N            cap the whole run (protects against a folder gone wild)
   --concurrency N          chunks generated in parallel (default 4)

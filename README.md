@@ -46,6 +46,43 @@ curl -fL https://raw.githubusercontent.com/acrot0/anki-forge/main/install.sh | s
 
 The binaries are **self-contained** — no Node.js, no npm account, no npm install. (npm users: recent npm refuses `github:` and remote-tarball installs by default, which is why npm is not the recommended path here.)
 
+## No API key? The local engine
+
+`--engine local` generates cards with a built-in rule engine — **no API key, no
+network, no cost, fully offline**:
+
+```bash
+anki-forge import 生物学讲义.md --deck "生物::细胞" --engine local
+```
+
+It extracts four exam-relevant patterns from the text: definitions
+("X 是 Y" → "什么是 X？"), enumerations ("X 包括 A、B、C"), cause-effect
+("A 导致 B"), and number/era facts. Deterministic and hallucination-free —
+you can see exactly which sentence each card came from. The trade-off is
+honesty: it is mechanical, and shines on well-structured textbook prose. For
+messy material, the LLM engine is strictly smarter.
+
+The web UI (`anki-forge ui`) has the same toggle — switch the engine to
+"本地引擎" and the key field disappears.
+
+## Android
+
+Two ways, both work today:
+
+1. **Browser + your PC** — run `anki-forge ui` on your PC, open
+   `http://<pc-ip>:<port>` from your phone (same Wi-Fi), drag files from the
+   phone, download the .apkg, and open it with
+   [AnkiDroid](https://ankidroid.org/). With `--engine local` this needs no
+   key anywhere.
+2. **Termux** (full CLI on the phone):
+
+   ```bash
+   pkg install nodejs-lts git
+   git clone https://github.com/acrot0/anki-forge.git
+   cd anki-forge && npm install
+   node src/cli.mjs import lecture.pdf --deck "考研" --engine local
+   ```
+
 ## Quick start
 
 **The graphical way** — run `anki-forge ui`: a local page where you drag files in,

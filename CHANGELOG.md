@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-09-25
+
+### Added
+
+- **Local engine (`--engine local`)** — a built-in rule-based card generator:
+  no API key, no network, no cost. Extracts definitions, enumerations,
+  cause-effect pairs, and number facts; deterministic and hallucination-free.
+  Available in the CLI, the wizard, and the web UI (key field disappears).
+- **Android paths documented** — browser-to-phone via `anki-forge ui` (AnkiDroid
+  imports the .apkg), and a full CLI recipe for Termux.
+
+### Fixed
+
+- The local engine no longer requires a language guess: Chinese and English
+  patterns are tried together and the question language follows the sentence.
+
 ## [0.9.0] — 2026-09-25
 
 ### Added

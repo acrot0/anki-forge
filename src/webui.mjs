@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseBuffer } from './parse.mjs';
 import { generateCards } from './generate.mjs';
+import { generateLocal } from './local-engine.mjs';
 import { loadCache } from './cache.mjs';
 import { writeApkgBytes } from './apkg.mjs';
 import { checkConnection, addCards } from './anki.mjs';
@@ -87,9 +88,10 @@ async function handle(req, res) {
     }
     if (req.method === 'POST' && url.pathname === '/api/generate') {
       const body = JSON.parse((await readBody(req)).toString('utf8'));
-      const { name, dataBase64, deck, provider, model, apiKey, style, maxCards, language, concurrency } = body;
+      const { name, dataBase64, deck, provider, model, apiKey, style, maxCards, language, concurrency, engine } = body;
       if (!name || !dataBase64) throw new Error('name and dataBase64 are required');
       if (!deck) throw new Error('deck is required');
+      const useLocal = engine === 'local';
       const args = applyProvider({
         apiKey, model, style, language,
         provider: provider || null,
@@ -97,12 +99,14 @@ async function handle(req, res) {
         maxCardsPerChunk: Number(maxCards) || 10,
         concurrency: Math.min(Math.max(Number(concurrency) || 4, 1), 12),
       });
+      if (!useLocal && !args.apiKey) throw new Error('no API key — switch to the local engine (free, offline) or provide one');
       const buf = Buffer.from(dataBase64, 'base64');
       const { chunks, kind } = await parseBuffer(path.extname(name), buf, { name });
       const id = Math.random().toString(36).slice(2);
       const job = {
         status: 'running', kind, total: chunks.length, done: 0,
         cards: [], perChunk: [], deck, error: null, apiKey, style: args.style,
+        engine: useLocal ? 'local' : 'llm',
         started: Date.now(),
       };
       jobs.set(id, job);
@@ -114,17 +118,19 @@ async function handle(req, res) {
       // used here and never stored beyond this closure.
       (async () => {
         try {
-          const cache = await loadCache();
           const opts = {
             apiKey: job.apiKey, model: args.model, style: args.style,
             language: args.language ?? null, baseUrl: args.baseUrl,
             maxCardsPerChunk: args.maxCardsPerChunk, concurrency: args.concurrency,
           };
-          const result = await generateCards(chunks, opts, {
-            cache,
-            onProgress: (done, total) => { job.done = done; },
-          });
-          await cache.save();
+          const cache = useLocal ? null : await loadCache();
+          const result = useLocal
+            ? await generateLocal(chunks, opts, { onProgress: (done, total) => { job.done = done; } })
+            : await generateCards(chunks, opts, {
+                cache,
+                onProgress: (done, total) => { job.done = done; },
+              });
+          if (cache) await cache.save();
           job.cards = result.cards;
           job.perChunk = result.perChunk;
           job.status = 'done';
@@ -135,7 +141,7 @@ async function handle(req, res) {
           delete job.apiKey; // used once, then gone
         }
       })();
-      return json(res, 200, { id, kind, total: chunks.length });
+      return json(res, 200, { id, kind, total: chunks.length, engine: useLocal ? 'local' : 'llm' });
     }
     if (req.method === 'GET' && url.pathname.startsWith('/api/job/')) {
       const id = url.pathname.split('/').pop();
