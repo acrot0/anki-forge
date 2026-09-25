@@ -32,7 +32,12 @@ function rules(language) {
     },
     {
       re: /^(.{3,50}?)(?:导致|引起|造成|使得|促使)(.{4,140})[。．；;]?$/,
-      make: (m) => ({ front: `${m[1].trim()}会导致什么？`, back: m[2].trim() }),
+      make: (m) => {
+        // The lazy capture swallows modal endings ("过度疲劳会" + "导致"); strip
+        // them so the question reads 过度疲劳, not 过度疲劳会.
+        const subject = m[1].trim().replace(/(?:会|将|可能|能)$/, '') || m[1].trim();
+        return { front: `${subject}会导致什么？`, back: m[2].trim() };
+      },
     },
   ];
   const enRules = [

@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.12.0] — 2026-09-25
+
+### Fixed
+
+- **Web demo rebuilt from scratch after a failed first pass**: the original
+  page used a regex lookbehind that throws SyntaxError on older mobile
+  browsers — killing the entire script, which is why nothing could be
+  exported. Sentence splitting is now split-based and runs everywhere.
+
+### Changed
+
+- **Visual overhaul** following Linear-style design language: near-black
+  canvas, centered gradient headline, glass panels with 1px light borders,
+  pill controls, generous vertical rhythm.
+- **PWA**: manifest + service worker + icon — 安卓浏览器「添加到主屏幕」后
+  作为独立应用离线使用。
+- Cause-effect cards no longer duplicate modal endings (过度疲劳会 →
+  过度疲劳).
+- Responsive audit: 9-point shrink test (viewport / fluid clamp / 640px grid
+  collapse / touch targets / no fixed widths) all passing.
+
 ## [0.11.0] — 2026-09-25
 
 ### Added

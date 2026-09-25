@@ -2,131 +2,211 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>anki-forge 体验版 — 讲义变卡组</title>
-<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>anki-forge — 讲义变卡组</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#08090a">
 <style>
-  :root { --b1:#4f46e5; --b2:#7c3aed; --bg:#f6f7fb; --card:#fff; --ink:#1e2233; --sub:#6b7280; --line:#e5e7eb; --chip:#eef2ff; --chip-ink:#3730a3; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#0f1117; --card:#171a23; --ink:#e7e9f0; --sub:#9aa1b2; --line:#262b38; --chip:#1e2140; --chip-ink:#a5b4fc; } }
-  * { box-sizing:border-box; margin:0; }
-  body { font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;
-         background-image:radial-gradient(circle at 15% -10%,#e0e7ff 0%,transparent 45%),radial-gradient(circle at 90% -10%,#ede9fe 0%,transparent 40%); }
-  .wrap { max-width:860px; margin:0 auto; padding:0 16px 60px; }
-  .hero { margin:18px 0 18px; padding:22px 24px; border-radius:18px; color:#fff; background:linear-gradient(120deg,var(--b1),var(--b2) 60%,#a855f7); box-shadow:0 10px 30px rgba(79,70,229,.25); }
-  .hero h1 { font-size:21px; } .hero p { margin-top:6px; font-size:13px; opacity:.92; }
-  .badge { display:inline-block; font-size:12px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:99px; padding:3px 10px; margin:10px 6px 0 0; }
-  .panel { background:var(--card); border-radius:14px; box-shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06); padding:18px; margin-bottom:16px; }
-  h2 { font-size:13px; color:var(--sub); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
-  textarea { width:100%; min-height:160px; border:1.5px solid var(--line); border-radius:10px; padding:12px; font-size:14px; font-family:inherit; background:var(--bg); color:var(--ink); outline:none; resize:vertical; }
-  textarea:focus { border-color:var(--b1); }
-  .btn { border:0; cursor:pointer; background:linear-gradient(135deg,var(--b1),var(--b2)); color:#fff; font-size:14.5px; font-weight:600; padding:11px 20px; border-radius:10px; width:100%; margin-top:12px; }
-  .btn.ghost { background:var(--card); color:var(--ink); border:1.5px solid var(--line); width:auto; font-size:13px; padding:8px 14px; margin:0; }
-  .btn:disabled { opacity:.5; }
-  .demo-btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
-  @media (max-width:640px) { .cards { grid-template-columns:1fr; } }
-  .card3 { border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:var(--card); }
-  .card3 .q { font-weight:600; font-size:13.5px; } .card3 .a { margin-top:6px; padding-top:6px; border-top:1px dashed var(--line); font-size:13px; color:var(--sub); }
-  .stat { margin-top:10px; font-size:13px; color:var(--ok); }
-  .note { font-size:12px; color:var(--sub); margin-top:8px; line-height:1.6; }
-  a { color:var(--b1); }
-  footer { text-align:center; font-size:12px; color:var(--sub); margin-top:20px; }
+  :root {
+    --bg: #08090a; --panel: rgba(255,255,255,.03); --panel-solid: #101114;
+    --ink: #f2f3f5; --sub: #8b909c; --line: rgba(255,255,255,.08); --line-2: rgba(255,255,255,.14);
+    --brand1: #818cf8; --brand2: #c084fc; --ok: #34d399; --err: #f87171;
+    --grad: linear-gradient(100deg, #a5b4fc, #c084fc 55%, #f0abfc);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 70% 40% at 50% -10%, rgba(129,140,248,.14), transparent),
+      radial-gradient(ellipse 40% 30% at 85% 5%, rgba(192,132,252,.08), transparent);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 0 clamp(14px, 4vw, 24px) 64px; }
+
+  /* hero — centered, gradient headline, generous rhythm */
+  .hero { text-align: center; padding: clamp(48px, 10vw, 96px) 0 clamp(28px, 6vw, 48px); }
+  .eyebrow { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--sub);
+    border: 1px solid var(--line-2); border-radius: 99px; padding: 5px 14px; margin-bottom: 22px; }
+  .eyebrow i { width: 6px; height: 6px; border-radius: 99px; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  h1 { font-size: clamp(30px, 6.5vw, 52px); line-height: 1.12; letter-spacing: -.02em; font-weight: 700; }
+  h1 .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { margin: 18px auto 0; max-width: 520px; font-size: clamp(14px, 2.6vw, 16.5px); line-height: 1.7; color: var(--sub); }
+
+  /* panels */
+  .panel {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: clamp(16px, 3.5vw, 26px); margin-bottom: 18px;
+    animation: rise .5s cubic-bezier(.2,.7,.3,1) both;
+  }
+  .panel:nth-of-type(2) { animation-delay: .06s; } .panel:nth-of-type(3) { animation-delay: .12s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .step { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .step b { width: 24px; height: 24px; border-radius: 8px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--brand1), var(--brand2)); font-size: 12.5px; color: #fff; flex-shrink: 0; }
+  .step span { font-size: 14px; font-weight: 650; letter-spacing: .2px; }
+
+  textarea {
+    width: 100%; min-height: clamp(130px, 24vw, 190px); border: 1px solid var(--line-2); border-radius: 12px;
+    padding: 13px 15px; font-size: 14.5px; line-height: 1.65; font-family: inherit; resize: vertical;
+    background: rgba(0,0,0,.25); color: var(--ink); outline: none; transition: border-color .15s, box-shadow .15s;
+  }
+  textarea:focus { border-color: var(--brand1); box-shadow: 0 0 0 3px rgba(129,140,248,.14); }
+  textarea::placeholder { color: #565b66; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .pill {
+    border: 1px solid var(--line-2); background: transparent; color: var(--sub); cursor: pointer;
+    font-size: 13px; padding: 8px 15px; border-radius: 99px; transition: all .15s; min-height: 38px;
+  }
+  .pill:hover { border-color: var(--brand1); color: var(--ink); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    border: 0; cursor: pointer; font-size: 15px; font-weight: 650; color: #fff; min-height: 48px;
+    background: linear-gradient(135deg, #6366f1, #a855f7); border-radius: 12px; margin-top: 14px;
+    box-shadow: 0 4px 20px rgba(99,102,241,.35), inset 0 1px 0 rgba(255,255,255,.18);
+    transition: transform .12s, box-shadow .15s, opacity .15s;
+  }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(99,102,241,.45); }
+  .btn:active:not(:disabled) { transform: scale(.985); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.mini { width: auto; min-height: 38px; font-size: 13px; padding: 8px 16px; margin: 0;
+    background: var(--panel-solid); border: 1px solid var(--line-2); box-shadow: none; }
+  .btn.mini:hover { border-color: var(--brand1); color: var(--brand1); box-shadow: none; }
+
+  .msg { margin-top: 12px; font-size: 13.5px; padding: 10px 14px; border-radius: 10px; display: none; animation: rise .3s both; }
+  .msg.err { display: block; background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.25); color: var(--err); }
+  .msg.ok { display: block; background: rgba(52,211,153,.08); border: 1px solid rgba(52,211,153,.25); color: var(--ok); }
+
+  /* cards grid — flips */
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+  .fc { perspective: 900px; min-height: 110px; cursor: pointer; animation: rise .35s both; }
+  .fc .inner { position: relative; width: 100%; height: 100%; min-height: 110px; transform-style: preserve-3d; transition: transform .45s cubic-bezier(.2,.7,.3,1); }
+  .fc.flip .inner { transform: rotateY(180deg); }
+  .fc .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--panel-solid); padding: 13px 15px;
+    display: flex; flex-direction: column; overflow: hidden; }
+  .fc .k { font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; color: var(--brand1); margin-bottom: 7px; }
+  .fc .t { font-size: 13.5px; line-height: 1.5; overflow: hidden; }
+  .fc .face.back { transform: rotateY(180deg); background: linear-gradient(160deg, rgba(129,140,248,.10), var(--panel-solid)); }
+  .fc .flip-hint { margin-top: auto; padding-top: 8px; font-size: 10.5px; color: #565b66; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 4px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-radius: 11px; text-align: center; padding: 12px 8px; }
+  .stat b { display: block; font-size: clamp(19px, 4vw, 24px); background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat span { font-size: 11.5px; color: var(--sub); }
+
+  .howto { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; font-size: 13px; color: var(--sub); line-height: 1.9; display: none; }
+  .howto code { background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-size: 12px; }
+  footer { text-align: center; font-size: 12.5px; color: var(--sub); padding: 26px 0 8px; line-height: 2; }
+  footer a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line-2); padding-bottom: 1px; }
 </style>
 </head>
 <body>
 <div class="wrap">
+
   <div class="hero">
-    <h1>⚒ anki-forge 网页体验版</h1>
-    <p>粘贴一段讲义文本，本地规则引擎即刻出卡——全程在你浏览器里完成，文本不上传任何服务器，无需注册无需 Key。</p>
-    <span class="badge">离线规则引擎</span><span class="badge">导出 Anki 可导入的 TSV</span><span class="badge">体验版 · PC 完整版见 GitHub</span>
+    <div class="eyebrow"><i></i>网页体验版 · 全程本地运行 · 无需注册</div>
+    <h1>讲义变卡组，<br><span class="grad">一个粘贴的距离。</span></h1>
+    <p>粘贴一段教材或讲义，本地规则引擎立刻抽出问答卡。文本不离开你的浏览器——无账号、无 API Key、无上传。</p>
   </div>
 
   <div class="panel">
-    <h2>1 · 输入材料</h2>
-    <textarea id="text" placeholder="粘贴讲义/课本片段（支持中文定义句、枚举句、因果句、数字事实）。例如：线粒体是细胞进行有氧呼吸的主要场所。"></textarea>
-    <div class="demo-btns">
-      <button class="btn ghost" id="demo-words">📚 加载示例：考研英语高频词 30 个</button>
-      <button class="btn ghost" id="demo-bio">🧬 加载示例：生物学短文</button>
+    <div class="step"><b>1</b><span>粘贴材料</span></div>
+    <textarea id="text" placeholder="例：线粒体是细胞进行有氧呼吸的主要场所。细胞器包括线粒体、内质网、核糖体。过度疲劳会导致免疫力下降。"></textarea>
+    <div class="row">
+      <button class="pill" id="demo-words">📚 考研英语高频词示例</button>
+      <button class="pill" id="demo-bio">🧬 生物学短文示例</button>
+      <button class="pill" id="clear">清空</button>
     </div>
   </div>
 
   <div class="panel">
-    <h2>2 · 生成本地引擎</h2>
-    <label style="font-size:13px;font-weight:600">每句最多出卡数 / 全局上限</label>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <input id="maxcards" type="number" value="10" min="1" max="50" style="width:90px;border:1.5px solid var(--line);border-radius:9px;padding:8px;background:var(--bg);color:var(--ink)">
-      <input id="maxtotal" type="number" value="60" min="1" style="width:90px;border:1.5px solid var(--line);border-radius:9px;padding:8px;background:var(--bg);color:var(--ink)">
+    <div class="step"><b>2</b><span>生成并导出</span></div>
+    <div class="row">
+      <label style="font-size:13px;color:var(--sub)">全局上限 <input id="maxtotal" type="number" value="60" min="1" style="width:72px;background:transparent;border:1px solid var(--line-2);border-radius:8px;color:var(--ink);padding:6px 8px;font-size:13px"></label>
     </div>
     <button class="btn" id="go">⚡ 生成卡片</button>
-    <div id="out"></div>
-    <div id="cards" class="cards"></div>
-    <div class="note" id="howto" style="display:none">
-      <b>导入 Anki / AnkiDroid：</b>下载 TSV → Anki「文件 → 导入」→ 字段分隔符选 Tab → 首行不是标题。正面=问题，背面=答案。<br>
-      <b>想要 .apkg 单文件（含样式模板）？</b>用 PC 版：<code>anki-forge import 材料.md --deck 卡组名</code> 或图形界面 <code>anki-forge ui</code>（见 GitHub）。
+    <div class="msg" id="msg"></div>
+    <div id="result"></div>
+    <div class="howto" id="howto">
+      <b>导入 Anki / AnkiDroid：</b>下载 TSV → Anki 菜单「文件 → 导入」→ 选该文件 → 字段分隔符 <code>Tab</code> → 导入。<br>
+      <b>想要更漂亮的 .apkg 单文件</b>（含深色模板、来源标签）？用 PC 版：<code>anki-forge import 材料.md --deck 卡组名</code>，或图形界面 <code>anki-forge ui</code>。<br>
+      <b>安卓主屏安装</b>：浏览器菜单 →「添加到主屏幕」，本页即成为独立应用（离线可用）。
     </div>
   </div>
 
-  <footer>anki-forge 开源（MIT）· <a href="https://github.com/acrot0/anki-forge">GitHub</a> · <a href="https://github.com/acrot0/anki-forge/releases">下载 PC 版（exe 内嵌图形界面）</a> · 体验版仅文本输入；PDF/PPT/Word/Excel 请用 PC 版</footer>
+  <footer>
+    anki-forge 开源（MIT）· <a href="https://github.com/acrot0/anki-forge">GitHub 仓库</a> · <a href="https://github.com/acrot0/anki-forge/releases">下载 PC 版</a>（exe 内嵌完整图形界面）<br>
+    体验版仅支持纯文本；PDF / PPT / Word / Excel 请用 PC 版。生成结果仅供试用，导入与否由你决定。
+  </footer>
 </div>
 <script>
-// ---- 考研英语示例数据（30 高频词）----
+const $ = (id) => document.getElementById(id);
+
+// ---------- demo data ----------
 const DEMO_WORDS = [
-  ['abandon','v. 放弃，抛弃','He was forced to abandon the plan.'],
-  ['abundant','adj. 丰富的，充裕的','The region has abundant natural resources.'],
-  ['accelerate','v. 加速，促进','Global warming has accelerated the melting of glaciers.'],
-  ['accommodate','v. 容纳；使适应','The hall can accommodate 500 people.'],
-  ['accumulate','v. 积累，积聚','Fat tends to accumulate around the waist.'],
-  ['acquire','v. 获得，习得','Children acquire language remarkably fast.'],
-  ['advocate','v./n. 提倡（者）','She advocates a balanced diet for children.'],
-  ['alleviate','v. 减轻，缓解','The medicine alleviated his pain quickly.'],
-  ['ambiguous','adj. 模棱两可的','His answer was deliberately ambiguous.'],
-  ['anticipate','v. 预期，预料','We anticipate strong opposition to the plan.'],
-  ['arbitrary','adj. 任意的，武断的','The rule seems completely arbitrary.'],
-  ['authentic','adj. 真实的，正宗的','The museum holds an authentic Ming vase.'],
-  ['autonomous','adj. 自主的，自治的','The region became fully autonomous in education.'],
-  ['bureaucracy','n. 官僚机构','Excessive bureaucracy slows everything down.'],
-  ['coincide','v. 巧合；一致','My views coincide with hers on education.'],
-  ['compensate','v. 补偿，弥补','Nothing can compensate for the loss of time.'],
-  ['comprehensive','adj. 全面的','The report gives a comprehensive analysis.'],
-  ['condemn','v. 谴责','World leaders condemned the attack.'],
-  ['confine','v. 限制','Please confine your remarks to the topic.'],
-  ['conform','v. 符合，遵从','All products must conform to safety standards.'],
-  ['contemplate','v. 沉思，考虑','She contemplated changing her career.'],
-  ['contradict','v. 反驳，矛盾','The two reports contradict each other.'],
-  ['convey','v. 传达','Words can hardly convey how grateful I am.'],
-  ['crucial','adj. 至关重要的','Reading plays a crucial role in learning.'],
-  ['deteriorate','v. 恶化','His health deteriorated rapidly last winter.'],
-  ['discriminate','v. 歧视；区分','The law forbids discriminating against the disabled.'],
-  ['eliminate','v. 消除，淘汰','We aim to eliminate waste in production.'],
-  ['facilitate','v. 促进','The new system facilitates online learning.'],
-  ['fundamental','adj. 基本的','Honesty is a fundamental value.'],
-  ['inevitable','adj. 不可避免的','Change is the inevitable result of progress.'],
+  ['abandon', 'v. 放弃，抛弃', 'He was forced to abandon the plan.'],
+  ['abundant', 'adj. 丰富的，充裕的', 'The region has abundant natural resources.'],
+  ['accelerate', 'v. 加速，促进', 'Global warming has accelerated the melting of glaciers.'],
+  ['accommodate', 'v. 容纳；使适应', 'The hall can accommodate 500 people.'],
+  ['accumulate', 'v. 积累，积聚', 'Fat tends to accumulate around the waist.'],
+  ['acquire', 'v. 获得，习得', 'Children acquire language remarkably fast.'],
+  ['advocate', 'v. 提倡', 'She advocates a balanced diet for children.'],
+  ['alleviate', 'v. 减轻，缓解', 'The medicine alleviated his pain quickly.'],
+  ['ambiguous', 'adj. 模棱两可的', 'His answer was deliberately ambiguous.'],
+  ['anticipate', 'v. 预期，预料', 'We anticipate strong opposition to the plan.'],
+  ['arbitrary', 'adj. 任意的，武断的', 'The rule seems completely arbitrary.'],
+  ['authentic', 'adj. 真实的，正宗的', 'The museum holds an authentic Ming vase.'],
+  ['autonomous', 'adj. 自主的', 'The region became fully autonomous in education.'],
+  ['bureaucracy', 'n. 官僚机构', 'Excessive bureaucracy slows everything down.'],
+  ['coincide', 'v. 一致', 'My views coincide with hers on education.'],
+  ['compensate', 'v. 补偿', 'Nothing can compensate for the loss of time.'],
+  ['comprehensive', 'adj. 全面的', 'The report gives a comprehensive analysis.'],
+  ['condemn', 'v. 谴责', 'World leaders condemned the attack.'],
+  ['confine', 'v. 限制', 'Please confine your remarks to the topic.'],
+  ['conform', 'v. 遵从', 'All products must conform to safety standards.'],
+  ['contemplate', 'v. 沉思，考虑', 'She contemplated changing her career.'],
+  ['contradict', 'v. 反驳', 'The two reports contradict each other.'],
+  ['convey', 'v. 传达', 'Words can hardly convey how grateful I am.'],
+  ['crucial', 'adj. 至关重要的', 'Reading plays a crucial role in learning.'],
+  ['deteriorate', 'v. 恶化', 'His health deteriorated rapidly last winter.'],
+  ['discriminate', 'v. 歧视；区分', 'The law forbids discriminating against the disabled.'],
+  ['eliminate', 'v. 消除，淘汰', 'We aim to eliminate waste in production.'],
+  ['facilitate', 'v. 促进', 'The new system facilitates online learning.'],
+  ['fundamental', 'adj. 基本的', 'Honesty is a fundamental value.'],
+  ['inevitable', 'adj. 不可避免的', 'Change is the inevitable result of progress.'],
 ];
+const DEMO_BIO = '线粒体是细胞进行有氧呼吸的主要场所，被称为细胞的动力车间。\n叶绿体是绿色植物进行光合作用的场所。\n细胞器包括线粒体、内质网、核糖体、高尔基体和溶酶体。\n糖类是生物体的主要能源物质。DNA 携带着生物体的遗传信息。\n蛋白质是生命活动的主要承担者，其基本组成单位是氨基酸。\n过度疲劳会导致免疫力下降。';
 
-const DEMO_BIO = `线粒体是细胞进行有氧呼吸的主要场所，被称为细胞的动力车间。叶绿体是绿色植物进行光合作用的场所。
-细胞器包括线粒体、内质网、核糖体、高尔基体和溶酶体。
-糖类是生物体的主要能源物质。DNA 携带着生物体的遗传信息。
-蛋白质是生命活动的主要承担者，其基本组成单位是氨基酸。
-1937 年是全面抗战爆发的时间。过度疲劳会导致免疫力下降。`;
-
-// ---- 本地规则引擎（与 src/local-engine.mjs 同规则）----
+// ---------- local engine (same rules as src/local-engine.mjs, NO lookbehind for compatibility) ----------
 function sentences(text) {
-  return text.split(/(?<=[。！？!?；;\n])/).map(s => s.replace(/^[\s•·\-*\d]+[.、)\]]*\s*/, '').trim())
-    .filter(s => s.length >= 7);
+  return text
+    .replace(/([。！？!?；;])\s*/g, '$1\n')
+    .split(/\n+/)
+    .map((s) => s.replace(/^[\s•·\-*\d]+[.、)\]]*\s*/, '').trim())
+    .filter((s) => s.length >= 7);
 }
 function rules() {
   return [
-    { re: /^(.{2,40}?)(?:是指|指的是|就是|是|称为|叫做)(.{4,160})[。．；;]?$/, make: m => ({ front: '什么是' + m[1].trim() + '？', back: m[2].trim() }) },
-    { re: /^(.{2,30}?)(?:包括|分为|包含|有以下|可分成)(.{4,180})[。；;]?$/, make: m => ({ front: m[1].trim() + '包括哪些内容？', back: m[2].trim() }) },
-    { re: /^(.{3,50}?)(?:导致|引起|造成|使得|促使)(.{4,140})[。．；;]?$/, make: m => ({ front: m[1].trim() + '会导致什么？', back: m[2].trim() }) },
-    { re: /^(.{2,36}?)(?:是|为|达到|约|大约|共)(\s*(?:公元)?\d[\d,.]*\s*(?:年|个|%|％|倍|千米|公里|米|克|千克|万吨|亿))[^。；]{0,60}[。；;]?$/, make: m => ({ front: m[1].trim() + '是多少？', back: m[2].trim() }) },
+    { re: /^(.{2,40}?)(?:是指|指的是|就是|是|称为|叫做)(.{4,160})[。．；;]?$/, make: (m) => ({ front: '什么是' + m[1].trim() + '？', back: m[2].trim() }) },
+    { re: /^(.{2,30}?)(?:包括|分为|包含|有以下|可分成)(.{4,180})[。；;]?$/, make: (m) => ({ front: m[1].trim() + '包括哪些内容？', back: m[2].trim() }) },
+    { re: /^(.{3,50}?)(?:导致|引起|造成|使得|促使)(.{4,140})[。．；;]?$/, make: (m) => { const subj = m[1].trim().replace(/(?:会|将|可能|能)$/, '') || m[1].trim(); return { front: subj + '会导致什么？', back: m[2].trim() }; } },
+    { re: /^(.{2,36}?)(?:是|为|达到|约|大约|共)(\s*(?:公元)?\d[\d,.]*\s*(?:年|个|%|％|倍|千米|公里|米|克|千克|万吨|亿))[^。；]{0,60}[。；;]?$/, make: (m) => ({ front: m[1].trim() + '是多少？', back: m[2].trim() }) },
+    { re: /^(.{2,60}?)\s+(?:is|are|refers to|means|is defined as)\s+(.{4,200})[.;]?$/i, make: (m) => ({ front: 'What is ' + m[1].trim() + '?', back: m[2].trim() }) },
+    { re: /^(.{2,40}?)\s+(?:includes|consists of|comprises|is divided into)\s+(.{4,200})[.;]?$/i, make: (m) => ({ front: 'What does ' + m[1].trim() + ' include?', back: m[2].trim() }) },
+    { re: /^(.{3,60}?)\s+(?:causes|leads to|results in)\s+(.{4,180})[.;]?$/i, make: (m) => ({ front: 'What does ' + m[1].trim() + ' lead to?', back: m[2].trim() }) },
   ];
 }
-function extractCards(text, maxCards) {
+function extractCards(text, cap) {
   const out = []; const seen = new Set();
   for (const s of sentences(text)) {
-    if (out.length >= maxCards) break;
+    if (out.length >= cap) break;
     for (const r of rules()) {
       const m = s.match(r.re);
       if (!m) continue;
@@ -140,53 +220,77 @@ function extractCards(text, maxCards) {
   return out;
 }
 
-// ---- demo loaders ----
+// ---------- handlers ----------
 $('demo-words').onclick = () => {
-  $('text').value = DEMO_WORDS.map(w => w[0] + ' ' + w[1] + '。例：' + w[2]).join('\n');
+  $('text').value = DEMO_WORDS.map((w) => w[0] + ' ' + w[1] + '。例：' + w[2]).join('\n');
   $('text').dataset.mode = 'vocab';
 };
 $('demo-bio').onclick = () => { $('text').value = DEMO_BIO; delete $('text').dataset.mode; };
+$('clear').onclick = () => { $('text').value = ''; delete $('text').dataset.mode; $('result').innerHTML = ''; msg(''); };
 
-// ---- generate ----
 $('go').onclick = () => {
   const text = $('text').value.trim();
-  if (!text) { outMsg('先粘贴或加载一段材料', true); return; }
+  if (!text) return msg('先粘贴或加载一段材料', 'err');
+  const cap = Math.max(1, +$('maxtotal').value || 60);
   let cards;
   if ($('text').dataset.mode === 'vocab') {
-    // 词表模式：每行「word 释义。例：例句」
-    cards = text.split(/\n+/).map(l => l.trim()).filter(Boolean).slice(0, +$('maxtotal').value || 60).map(l => {
-      const m = l.match(/^(\S+)\s+(.+?)(?:。?\s*例：(.+))?\.?$/);
+    cards = text.split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, cap).map((l) => {
+      const m = l.match(/^(\S+)\s+(.+?)(?:。\s*例：(.+?))?\.?$/);
       return m ? { front: m[1], back: (m[2] || '') + (m[3] ? '\n' + m[3] : '') } : null;
     }).filter(Boolean);
   } else {
-    cards = extractCards(text, +$('maxtotal').value || 60);
+    cards = extractCards(text, cap);
   }
-  if (cards.length === 0) { outMsg('没能从材料里抽出卡片——试试包含「X 是 Y」「X 包括…」句式的段落', true); return; }
+  if (cards.length === 0) return msg('没能抽出卡片——材料里需要有「X 是 Y」「X 包括…」「A 导致 B」或数字事实句式', 'err');
   render(cards);
 };
 
 function render(cards) {
-  const cap = +$('maxcards').value || 10;
-  $('out').innerHTML = '<div class="stat">✨ 抽出 ' + cards.length + ' 张卡片（每句上限 ' + cap + ' 已按行应用）</div>' +
-    '<div class="demo-btns" style="margin-top:10px">' +
-    '<button class="btn ghost" id="dltsv">⬇ 下载 TSV（Anki 可导入）</button>' +
-    '<button class="btn ghost" id="copy">复制到剪贴板</button></div>' +
-    '<div class="note" id="howto" style="display:block"><b>导入 Anki：</b>文件 → 导入 → 选 TSV → 字段分隔符 Tab。<br><b>想要 .apkg 单文件？</b>用 PC 版（见下方链接），样式模板都打包好。</div>';
-  $('cards').innerHTML = cards.slice(0, 40).map(c =>
-    '<div class="card3"><div class="q">' + esc(c.front) + '</div><div class="a">' + esc(c.back).replace(/\n/g, '<br>') + '</div></div>').join('');
-  const tsv = cards.map(c => c.front + '\t' + c.back.replace(/\n/g, ' ')).join('\n');
-  $('dltsv').onclick = () => {
+  msg('✨ 抽出 ' + cards.length + ' 张卡片。点击卡片翻面看答案。', 'ok');
+  $('result').innerHTML =
+    '<div class="stats"><div class="stat"><b>' + cards.length + '</b><span>卡片</span></div>' +
+    '<div class="stat"><b>TSV</b><span>Anki 可导入</span></div>' +
+    '<div class="stat"><b>0</b><span>上传的字节</span></div></div>' +
+    '<div class="row" style="margin-top:6px">' +
+    '<button class="btn mini" id="dl">⬇ 下载 TSV</button>' +
+    '<button class="btn mini" id="cp">复制到剪贴板</button>' +
+    '<button class="btn mini" id="more">导入方法 ▾</button></div>' +
+    '<div class="grid">' + cards.map((c, i) =>
+      '<div class="fc" style="animation-delay:' + Math.min(i * 35, 500) + 'ms" onclick="this.classList.toggle(\'flip\')">' +
+      '<div class="inner">' +
+      '<div class="face"><div class="k">Q</div><div class="t">' + esc(c.front) + '</div><div class="flip-hint">↻ 点击翻面</div></div>' +
+      '<div class="face back"><div class="k">A</div><div class="t">' + esc(c.back).replace(/\n/g, '<br>') + '</div><div class="flip-hint">↻ 点击翻回</div></div>' +
+      '</div></div>').join('') + '</div>' +
+    '<div class="howto" id="howto"></div>';
+  const tsv = cards.map((c) => c.front + '\t' + c.back.replace(/\n/g, ' ')).join('\n');
+  $('dl').onclick = () => {
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([tsv], { type: 'text/plain' }));
-    a.download = 'anki-forge-demo.txt'; a.click();
+    a.href = URL.createObjectURL(new Blob([tsv], { type: 'text/plain;charset=utf-8' }));
+    a.download = 'anki-forge-cards.txt'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   };
-  $('copy').onclick = () => { navigator.clipboard.writeText(tsv); $('copy').textContent = '✓ 已复制'; };
+  $('cp').onclick = async () => {
+    try { await navigator.clipboard.writeText(tsv); $('cp').textContent = '✓ 已复制'; }
+    catch (e) { $('cp').textContent = '复制失败，请手动选择'; }
+  };
+  $('more').onclick = () => {
+    const h = $('howto');
+    h.innerHTML = '<b>导入 Anki / AnkiDroid：</b>下载 TSV → Anki 菜单「文件 → 导入」→ 字段分隔符 <code>Tab</code>。<br>' +
+      '<b>.apkg 单文件（含深色模板）</b>：用 PC 版 <code>anki-forge import 材料.md --deck 卡组名</code>。<br>' +
+      '<b>安卓主屏</b>：浏览器菜单 →「添加到主屏幕」。';
+    h.style.display = h.style.display === 'block' ? 'none' : 'block';
+  };
 }
 
-function outMsg(m, isErr) {
-  $('out').innerHTML = '<div class="stat" style="color:' + (isErr ? '#dc2626' : '#059669') + '">' + esc(m) + '</div>';
+function msg(m, cls) {
+  $('msg').className = 'msg ' + (cls || '');
+  $('msg').textContent = m;
+  $('msg').style.display = m ? 'block' : 'none';
 }
-function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// PWA: register the offline shell
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>

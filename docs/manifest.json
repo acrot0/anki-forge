@@ -1,0 +1,13 @@
+{
+  "name": "anki-forge 体验版",
+  "short_name": "anki-forge",
+  "description": "讲义变卡组 — 本地规则引擎，全程浏览器内完成",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#08090a",
+  "theme_color": "#08090a",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
