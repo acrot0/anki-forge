@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.19.0] — 2026-09-25
+
+### Added
+
+- **File import in the web demo** — Word (.docx via in-browser zip
+  extraction), .txt and .md files can be loaded straight from the phone or
+  PC; the parsed text feeds the same local engine. PDF stays a PC-version
+  feature (pdf.js is out of scope for the demo page).
+- **Visual polish**: gradient primary button, list hover glow, deeper
+  appbar shadow.
+
 ## [0.18.0] — 2026-09-25
 
 ### Changed
