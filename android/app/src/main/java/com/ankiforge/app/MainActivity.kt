@@ -1,6 +1,5 @@
 package com.ankiforge.app
 
-import android.app.Activity
 import android.net.Uri
 import android.os.Bundle
 import android.webkit.ValueCallback
@@ -8,6 +7,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 
 /**
@@ -16,7 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
  * 通过 onShowFileChooser 桥接到系统文件选择器——没有它页面里的
  * <input type=file> 在 WebView 里打不开，这是导入功能的生命线。
  */
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
     private var fileCallback: ValueCallback<Array<Uri>>? = null
