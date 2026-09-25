@@ -33,7 +33,8 @@
   .appbar a { font-size: 12.5px; color: var(--teal); text-decoration: none; font-weight: 600; }
   .body { padding: 14px 14px 40px; }
 
-  .sec-label { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .6px; margin: 16px 0 8px; }
+  .sec-label { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .6px; margin: 16px 0 8px; display: flex; align-items: center; gap: 7px; }
+  .sec-label::before { content: ""; width: 3px; height: 13px; border-radius: 2px; background: var(--teal); opacity: .7; }
   textarea {
     width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 12px;
     padding: 11px 13px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
@@ -44,6 +45,8 @@
   .chip { border: 1px solid var(--line); background: #ffffff; color: var(--sub); cursor: pointer;
           font-size: 12.5px; padding: 7px 12px; border-radius: 99px; transition: all .15s; }
   .chip:active { transform: scale(.96); }
+  .chip.subj { background: var(--c1); color: var(--c2); border-color: transparent; font-weight: 600; }
+  .chip.subj:hover { filter: brightness(.96); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.08); }
 
   .btn {
     display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
@@ -137,11 +140,11 @@
     <div id="filechip" style="display:none"></div>
     <textarea id="text" placeholder="…或直接粘贴讲义文本。支持句式：X 是 Y / X 包括 A、B / A 导致 B / 数字年代事实"></textarea>
     <div class="chips" id="demos">
-      <button class="chip" data-demo="words">考研英语词表</button>
-      <button class="chip" data-demo="bio">生物·细胞</button>
-      <button class="chip" data-demo="hist">中国近代史</button>
-      <button class="chip" data-demo="cs">计算机网络</button>
-      <button class="chip" data-demo="med">医学·免疫</button>
+      <button class="chip subj" data-demo="words" style="--c1:#eff6ff;--c2:#1d4ed8">📚 考研英语词表</button>
+      <button class="chip subj" data-demo="bio" style="--c1:#ecfdf5;--c2:#047857">🧬 生物·细胞</button>
+      <button class="chip subj" data-demo="hist" style="--c1:#fffbeb;--c2:#b45309">📜 中国近代史</button>
+      <button class="chip subj" data-demo="cs" style="--c1:#f5f3ff;--c2:#6d28d9">💻 计算机网络</button>
+      <button class="chip subj" data-demo="med" style="--c1:#fef2f2;--c2:#b91c1c">🏥 医学·免疫</button>
     </div>
     <button class="btn" id="go">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
