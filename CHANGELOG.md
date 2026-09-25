@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-09-25
+
+### Changed
+
+- **shadcn/ui design language** for the demo page: zinc neutral palette with
+  a single indigo accent, precise type scale (Inter + system CJK), small
+  radii, shadow-xs cards — replacing the generic look.
+
+### Added
+
+- **Multi-format export**: TSV (Anki), CSV, JSON, Markdown — one click each.
+
 ## [0.24.0] — 2026-09-25
 
 ### Added
