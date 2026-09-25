@@ -29,7 +29,7 @@
     --ease: cubic-bezier(.16,1,.3,1);
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --background: #101012; --foreground: #f4f4f5;
       --muted: #18181b; --muted-fg: #a1a1aa;
       --border: #27272a; --accent: #1f1f23;
@@ -214,7 +214,7 @@
         选择文件
       </button>
       <span style="font-size:12.5px;color:var(--muted-fg)">Word · PDF · TXT · MD · 图片（OCR）</span>
-      <input type="file" id="fileinput" accept=".docx,.pdf,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp" style="display:none">
+      <input type="file" id="fileinput" accept=".docx,.pdf,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp,.bmp" style="display:none">
     </div>
     <div id="filechip"></div>
     <div class="sec" style="margin-top:14px"><span class="n">2</span>或粘贴文本</div>
@@ -291,6 +291,9 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
+// 深色跟随系统；?theme=light 允许手动切浅色
+const THEME_FORCE = new URLSearchParams(location.search).get('theme') === 'light';
+if (THEME_FORCE) document.documentElement.dataset.theme = 'light';
 let CARDS = [];
 let FSRS_LIB = null;
 import('https://cdn.jsdelivr.net/npm/ts-fsrs@5/+esm').then(m => { FSRS_LIB = m; }).catch(() => {});
@@ -659,7 +662,7 @@ document.addEventListener('keydown', (e) => {
 // 深色 theme-color 跟随系统
 (function () {
   const mq = matchMedia('(prefers-color-scheme: dark)');
-  const set = () => document.querySelector('meta[name=theme-color]').content = mq.matches ? '#101012' : '#ffffff';
+  const set = () => document.querySelector('meta[name=theme-color]').content = (mq.matches && !THEME_FORCE) ? '#101012' : '#ffffff';
   set(); mq.addEventListener?.('change', set);
 })();
 

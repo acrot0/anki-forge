@@ -23,7 +23,7 @@
     --ease: cubic-bezier(.16,1,.3,1);
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --background: #101012; --foreground: #f4f4f5;
       --muted: #18181b; --muted-fg: #a1a1aa;
       --border: #27272a; --accent: #1f1f23;
@@ -152,6 +152,8 @@
   .grades .g2 { color: #d97706; } .grades .g3 { color: var(--primary); }
   .grades .g4 { color: #2563eb; }
   .study-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted-fg); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+  .sprog { height: 4px; background: var(--muted); border-radius: 99px; overflow: hidden; margin-bottom: 10px; }
+  .sprog i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width .25s; }
   .exrow { display: flex; gap: 6px; flex-wrap: wrap; }
   .hidden { display: none !important; }
   .linkbtn { border: 0; background: none; color: var(--primary); font-size: 13px; font-weight: 500;
@@ -298,6 +300,10 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
+// 深色跟随系统；?theme=light 允许手动切浅色（深色系统下的白天学习）
+if (new URLSearchParams(location.search).get('theme') === 'light') {
+  document.documentElement.dataset.theme = 'light';
+}
 let FILES = [];
 let STYLE = 'basic';
 let ENGINE = 'llm';
@@ -371,10 +377,42 @@ drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); addFil
 $('file').onchange = (e) => addFiles(e.target.files);
 function addFiles(list) {
   for (const f of list) {
+    if (/\.(png|jpe?g|webp|bmp)$/i.test(f.name)) { ocrToFile(f); continue; }
     const r = new FileReader();
     r.onload = () => { FILES.push({ name: f.name, dataBase64: r.result.split(',')[1], bytes: f.size }); renderFiles(); };
     r.readAsDataURL(f);
   }
+}
+// 图片走客户端 OCR（服务端不做 OCR）：tesseract.js 懒加载，识别结果并入虚拟 .txt
+async function ocrToFile(f) {
+  gmsg('正在 OCR 识别 ' + f.name + '（首次会下载识别模型）…');
+  try {
+    await loadTesseract();
+    const { data: { text } } = await window.__ocrWorker.recognize(new Blob([await f.arrayBuffer()]));
+    const t = text.replace(/\n{3,}/g, '\n\n').trim();
+    if (t.length < 4) throw new Error('没认出文字——图片可能太模糊');
+    const bytes = new TextEncoder().encode(t);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    FILES.push({ name: f.name.replace(/\.[^.]+$/, '') + '.txt', dataBase64: btoa(bin), bytes: bytes.length });
+    renderFiles();
+    gmsg('✓ OCR 完成：' + f.name + ' → ' + t.length + ' 字，已加入文件列表');
+  } catch (e) {
+    gmsg('OCR 失败：' + e.message, true);
+  }
+}
+function loadTesseract() {
+  if (window.__ocrWorker) return Promise.resolve();
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = async () => {
+      try { window.__ocrWorker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, { logger: () => {} }); res(); }
+      catch (e) { rej(e); }
+    };
+    s.onerror = () => rej(new Error('识别模型加载失败（此功能需要联网）'));
+    document.head.appendChild(s);
+  });
 }
 function renderFiles() {
   $('files').innerHTML = FILES.map((f, i) =>
@@ -450,6 +488,10 @@ async function poll() {
   clearInterval(POLL);
   $('go').disabled = false;
   const failed = (j.perChunk || []).filter(c => c.error).length;
+  if (j.cards.length === 0) {
+    gmsg('没抽出卡片——本地引擎需要「X 是 Y」「X 包括…」「A 导致 B」句式、数字年代事实或单词表；换成 AI 引擎对任意叙述文本更聪明。', true);
+    return;
+  }
   gmsg('完成：' + j.cards.length + ' 张卡片（' + j.done + '/' + j.total + ' 节' + (failed ? '，' + failed + ' 节失败' : '') + '）。点击卡片翻面；学习进度已就绪。');
   $('exrow').classList.remove('hidden');
   $('study-deck').value = $('deck').value.trim();
@@ -544,10 +586,11 @@ function renderStudy() {
     return;
   }
   if (STUDY.index >= STUDY.queue.length) {
+    const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 100;
     $('study-session').innerHTML =
       '<div class="empty" style="animation:pop .25s both">' +
       '<div style="font-size:17px;font-weight:650;color:var(--primary);margin-bottom:6px">本轮完成</div>' +
-      '<div>复习 ' + STUDY.done + ' 张（其中标忘 ' + STUDY.again + ' 张）<br>到期卡片会再次出现在队列里。</div>' +
+      '<div>复习 ' + STUDY.done + ' 张（其中标忘 ' + STUDY.again + ' 张）· 正确率 ' + acc + '%<br>标忘的卡会更快回来。</div>' +
       '<button class="btn outline" style="margin:14px auto 0" onclick="location.reload()">刷新队列</button></div>';
     return;
   }
@@ -560,6 +603,7 @@ function renderStudy() {
     : '';
   $('study-session').innerHTML =
     '<div class="study-meta"><span>第 ' + (STUDY.index + 1) + ' / ' + STUDY.queue.length + ' 张</span><span>剩余 ' + remaining + '</span></div>' +
+    '<div class="sprog"><i style="width:' + Math.round(STUDY.index / STUDY.queue.length * 100) + '%"></i></div>' +
     statRow +
     '<div class="ocard" id="ocard"><div class="tint" id="otint"></div><div class="flip" id="oflip">' +
     '<div class="face front"><span class="tag">' + (c.state === 0 ? '新卡片' : '复习') + '</span>' +

@@ -6,6 +6,11 @@
 
 Turn textbooks, lecture notes and handouts into Anki decks — with **your own** LLM key.
 
+**No install, no key, nothing leaves the browser:** open the
+[demo page](https://acrot0.github.io/anki-forge/), paste lecture text or import
+Word/PDF/images (OCR), get cards instantly with the built-in rule engine, study
+them with spaced repetition, and export TSV/CSV/JSON/Markdown.
+
 ```bash
 npx anki-forge import lecture.pdf --deck "Med school::Cardio"
 npx anki-forge import 考研政治讲义.md --deck "考研::政治" --dry-run   # preview, write nothing
@@ -17,6 +22,19 @@ npx anki-forge import 考研政治讲义.md --deck "考研::政治" --dry-run   
   deck Med school::Cardio created
 done: 311 added, 7 duplicates skipped (of 318 generated)
 ```
+
+## Screenshots
+
+| Generate & export (web UI) | Study with FSRS (web UI) |
+| --- | --- |
+| ![Generate cards and export](docs/screenshots/ui-generate.png) | ![Study with FSRS](docs/screenshots/ui-study.png) |
+
+<p align="center">
+  <img src="docs/screenshots/demo-mobile.png" width="320" alt="Mobile demo page — paste, generate, study">
+</p>
+
+The web UI works fully offline (no CDN), follows system dark mode
+(`?theme=light` forces light), and the demo page runs entirely client-side.
 
 ## Why this exists
 
@@ -85,10 +103,13 @@ Two ways, both work today:
 
 ## Quick start
 
-**The graphical way** — run `anki-forge ui`: a local page where you drag files in,
-pick a provider from a dropdown, watch per-chunk progress live, preview every card,
-and download the .apkg or write straight into Anki with one click. Nothing leaves
-your machine except the requests to your chosen LLM provider.
+**The graphical way** — run `anki-forge ui`: a local page where you drag files in
+(or paste text, or drop an image for OCR), pick a provider from a dropdown or
+switch to the key-free local engine, watch per-chunk progress live, browse the
+generated cards in a searchable list, study them with FSRS spaced repetition
+(3D flip, swipe grading, keyboard-first), and download .apkg / TSV / CSV / JSON
+/ Markdown or write straight into Anki with one click. Nothing leaves your
+machine except the requests to your chosen LLM provider.
 
 **The terminal way** — run the binary with no arguments for an interactive wizard, or:
 
@@ -129,9 +150,10 @@ anki-forge check        # is Anki reachable? is the key set?
 | `--base-url URL` / `--model NAME` / `--api-key KEY` | generation endpoint |
 | `--anki-url URL` | default `http://127.0.0.1:8765` |
 
-Files: `.pdf` (text layer), `.pptx` (text runs; one chunk per slide), `.md`,
-`.txt`. Markdown headings become section boundaries; in plain text and PDF,
-section titles are detected by shape.
+Files: `.pdf` (text layer), `.pptx` (text runs; one chunk per slide), `.docx`,
+`.xlsx`, `.md`, `.txt` — plus images (`.png/.jpg/.webp/.bmp`) via client-side
+OCR in the web UI. Markdown headings become section boundaries; in plain text
+and PDF, section titles are detected by shape.
 
 ## Beyond import
 

@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.28.0] — 2026-09-25
+
+### Added
+
+- **Image OCR in the full web UI** — dropping a `.png/.jpg/.webp/.bmp` runs
+  tesseract.js (chi_sim+eng) client-side and adds the recognized text as a
+  virtual .txt input. Previously the file picker accepted images but the
+  server-side parser (honestly) did not — the picker lied. OCR needs the
+  network once to fetch the model; everything else stays offline.
+- **Study progress bar and accuracy** in the full web UI session, matching
+  the demo.
+- **`?theme=light` override** on both pages — light mode on a dark system
+  (daytime study) without touching the OS setting.
+- **README screenshots** — the repo now shows the actual UI.
+
+### Fixed
+
+- Zero-card generation in the full web UI reported a green "完成：0 张卡片"
+  success box; it now explains what the local engine needs (sentence
+  patterns / word lists) and points at the AI engine for free-form prose.
+
 ## [0.27.0] — 2026-09-25
 
 ### Added
