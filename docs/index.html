@@ -1,115 +1,216 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dim">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>anki-forge — 讲义变卡组</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#1d232a">
-<link href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" rel="stylesheet" type="text/css">
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<meta name="theme-color" content="#f8fafc">
 <style>
-  .hero-grad { background: radial-gradient(ellipse 80% 60% at 50% -20%, oklch(.45 .15 285 / .55), transparent), radial-gradient(ellipse 50% 40% at 80% 0%, oklch(.5 .12 330 / .35), transparent); }
-  .title-grad { background: linear-gradient(100deg, #a5b4fc, #c084fc 55%, #f0abfc); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .card-toggle { cursor: pointer; min-height: 120px; }
-  .card-toggle .face-a { display: flex; }
-  .card-toggle .face-b { display: none; }
-  .card-toggle.shown .face-a { display: none; }
-  .card-toggle.shown .face-b { display: flex; animation: rise .3s both; }
-  .stagger { animation: rise .5s cubic-bezier(.16,1,.3,1) both; }
-  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  .sheen { position: relative; overflow: hidden; }
-  .sheen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.25) 50%, transparent 65%); background-size: 220% 100%; background-position: 220% 0; transition: background-position .6s; }
-  .sheen:hover::after { background-position: -120% 0; }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --ink: #17202a; --sub: #5c6773; --faint: #8a93a0;
+    --line: #e3e8ee; --teal: #0d9488; --teal-d: #0f766e; --teal-bg: #e6f5f3;
+    --err: #dc2626;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: var(--card);
+         box-shadow: 0 0 0 1px var(--line), 0 4px 24px rgba(16,24,40,.05); }
+  @media (min-width: 560px) { .app { margin-top: 20px; border-radius: 18px; } }
+  .appbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(8px); z-index: 20;
+  }
+  .appbar .brand { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 15.5px; }
+  .appbar .brand svg { width: 20px; height: 20px; stroke: var(--teal); fill: none; }
+  .appbar a { font-size: 12.5px; color: var(--teal); text-decoration: none; font-weight: 600; }
+  .body { padding: 14px 14px 40px; }
+
+  .sec-label { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .6px; margin: 16px 0 8px; }
+  textarea {
+    width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 11px 13px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
+    background: #fbfcfd; color: var(--ink); outline: none; transition: border-color .15s;
+  }
+  textarea:focus { border-color: var(--teal); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { border: 1px solid var(--line); background: #fff; color: var(--sub); cursor: pointer;
+          font-size: 12.5px; padding: 7px 12px; border-radius: 99px; transition: all .15s; }
+  .chip:active { transform: scale(.96); }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
+    border: 0; cursor: pointer; font-size: 14.5px; font-weight: 650; color: #fff; min-height: 46px;
+    background: var(--teal); border-radius: 12px; margin-top: 12px; transition: background .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn.secondary { background: var(--teal-bg); color: var(--teal-d); width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
+
+  .msg { margin: 10px 0 0; font-size: 13px; padding: 9px 12px; border-radius: 10px; display: none; }
+  .msg.err { display: block; background: #fef2f2; color: var(--err); }
+  .msg.ok { display: block; background: var(--teal-bg); color: var(--teal-d); }
+
+  .search { position: relative; margin-top: 10px; }
+  .search input { width: 100%; border: 1.5px solid var(--line); border-radius: 11px; padding: 9px 12px 9px 36px;
+    font-size: 13.5px; background: #fbfcfd; color: var(--ink); outline: none; }
+  .search input:focus { border-color: var(--teal); }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--faint); fill: none; stroke-width: 2; }
+  .clist { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
+  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+  .citem .qrow { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; cursor: pointer; }
+  .citem .qnum { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--teal-bg);
+    color: var(--teal-d); font-size: 11px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
+  .citem .qtext { font-size: 13.5px; font-weight: 600; line-height: 1.5; flex: 1; }
+  .citem .atext { padding: 9px 12px 11px 40px; font-size: 13px; line-height: 1.6; color: var(--sub);
+    border-top: 1px dashed var(--line); display: none; }
+  .citem.open .atext { display: block; animation: fade .25s both; }
+  .citem .src { font-size: 11px; color: var(--faint); margin-top: 4px; }
+  .citem.match-none { display: none; }
+  @keyframes fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+  .count-row span { font-size: 12.5px; color: var(--sub); }
+  .empty { text-align: center; padding: 30px 10px; color: var(--faint); font-size: 13px; }
+
+  .overlay { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: none; flex-direction: column; }
+  .overlay.on { display: flex; }
+  .obar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .obar .x { border: 0; background: none; font-size: 15px; cursor: pointer; color: var(--sub); padding: 4px 8px; }
+  .obar .prog { flex: 1; height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .obar .prog i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: 99px; transition: width .3s; }
+  .obar .cnt { font-size: 12px; color: var(--sub); }
+  .ocard-area { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; }
+  .ocard { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px;
+    min-height: 210px; display: flex; flex-direction: column; box-shadow: 0 2px 14px rgba(16,24,40,.06);
+    touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .ocard .tagline { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--teal); margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center; }
+  .ocard .qbig { font-size: 18px; font-weight: 650; line-height: 1.55; text-align: center; margin: auto 0; }
+  .ocard .abig { font-size: 15.5px; line-height: 1.65; color: var(--ink); }
+  .ocard .qkeep { font-size: 13px; font-weight: 600; color: var(--sub); border-bottom: 1px dashed var(--line);
+    padding-bottom: 10px; margin-bottom: 12px; line-height: 1.5; }
+  .ocard .src { font-size: 11.5px; color: var(--faint); margin-top: 12px; }
+  .ocard .speak-btn { border: 1px solid var(--line); background: #fff; border-radius: 99px; width: 34px; height: 34px;
+    display: grid; place-items: center; cursor: pointer; }
+  .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
+  .grades button { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 11px 0;
+    font-size: 13px; font-weight: 650; cursor: pointer; color: var(--ink); }
+  .grades button small { display: block; font-size: 10.5px; font-weight: 400; color: var(--faint); margin-top: 2px; }
+  .grades .g1 { border-color: #fecaca; } .grades .g1:active { background: #fef2f2; }
+  .grades .g2 { border-color: #fde68a; } .grades .g2:active { background: #fffbeb; }
+  .grades .g3 { border-color: #99f6e4; } .grades .g3:active { background: var(--teal-bg); }
+  .grades .g4 { border-color: #bfdbfe; } .grades .g4:active { background: #eff6ff; }
+  .swipe-hint { text-align: center; font-size: 11.5px; color: var(--faint); padding-bottom: 10px; }
+  .done-box { text-align: center; padding: 40px 20px; }
+  .done-box .big { font-size: 22px; font-weight: 750; color: var(--teal); }
+  .done-box .sub { font-size: 13px; color: var(--sub); margin-top: 6px; line-height: 1.7; }
 </style>
 </head>
 <body>
-<div class="navbar bg-base-200/60 backdrop-blur sticky top-0 z-40 border-b border-base-300">
-  <div class="navbar-start">
-    <div class="flex items-center gap-2"><span class="text-2xl">⚒</span><span class="font-bold text-lg">anki-forge</span></div>
+<div class="app">
+  <div class="appbar">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 7h7"/></svg>
+      anki-forge
+    </div>
+    <a href="https://github.com/acrot0/anki-forge" target="_blank">PC 版下载</a>
   </div>
-  <div class="navbar-center hidden sm:flex"><span class="text-sm opacity-60">讲义变卡组 · 体验版</span></div>
-  <div class="navbar-end">
-    <a href="https://github.com/acrot0/anki-forge" class="btn btn-ghost btn-sm">GitHub</a>
-    <a href="https://github.com/acrot0/anki-forge/releases" class="btn btn-primary btn-sm">下载 PC 版</a>
+
+  <div class="body">
+    <div class="sec-label">导入材料（纯文本，本地处理）</div>
+    <textarea id="text" placeholder="粘贴讲义片段。支持句式：X 是 Y / X 包括 A、B / A 导致 B / 数字年代事实"></textarea>
+    <div class="chips" id="demos">
+      <button class="chip" data-demo="words">考研英语词表</button>
+      <button class="chip" data-demo="bio">生物·细胞</button>
+      <button class="chip" data-demo="hist">中国近代史</button>
+      <button class="chip" data-demo="cs">计算机网络</button>
+      <button class="chip" data-demo="med">医学·免疫</button>
+    </div>
+    <button class="btn" id="go">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      生成卡片
+    </button>
+    <div class="msg" id="msg"></div>
+
+    <div id="listwrap" style="display:none">
+      <div class="sec-label" style="margin-top:20px">卡片列表</div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" placeholder="搜索问题或答案…">
+      </div>
+      <div class="count-row"><span id="count"></span><button class="btn secondary" id="study-go">▶ 开始学习</button></div>
+      <div class="clist" id="clist"></div>
+    </div>
   </div>
 </div>
 
-<div class="hero-grad">
-  <div class="wrap mx-auto max-w-3xl px-4 pt-14 pb-8 text-center">
-    <div class="badge badge-outline gap-2 mb-5"><span class="inline-block w-1.5 h-1.5 rounded-full bg-success"></span>体验版 · 全程本地运行 · 无需注册与 Key</div>
-    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">讲义变卡组，<br><span class="title-grad">一个粘贴的距离。</span></h1>
-    <p class="mt-5 text-base-content/70 max-w-xl mx-auto leading-relaxed">粘贴一段教材或讲义，本地规则引擎立刻抽出问答卡。全程在你的浏览器里完成——文本不经过任何服务器，出什么卡一目了然。</p>
+<div class="overlay" id="overlay">
+  <div class="obar">
+    <button class="x" id="ox">✕</button>
+    <div class="prog"><i id="oprogress"></i></div>
+    <span class="cnt" id="ocount"></span>
   </div>
-</div>
-
-<div class="mx-auto max-w-3xl px-4 pb-20">
-  <div class="card bg-base-100 shadow-xl border border-base-300 stagger">
-    <div class="card-body">
-      <h2 class="card-title text-base"><span class="w-6 h-6 grid place-items-center rounded-lg bg-primary text-primary-content text-xs font-bold">1</span>粘贴材料，或加载学科示例</h2>
-      <textarea id="text" class="textarea textarea-bordered w-full min-h-36 leading-relaxed" placeholder="例：线粒体是细胞进行有氧呼吸的主要场所。细胞器包括线粒体、内质网、核糖体。过度疲劳会导致免疫力下降。"></textarea>
-      <div class="flex flex-wrap gap-2 mt-2" id="demos">
-        <button class="btn btn-outline btn-sm" data-demo="words">📚 考研英语高频词</button>
-        <button class="btn btn-outline btn-sm" data-demo="bio">🧬 生物·细胞</button>
-        <button class="btn btn-outline btn-sm" data-demo="hist">📜 中国近代史</button>
-        <button class="btn btn-outline btn-sm" data-demo="cs">💻 计算机网络</button>
-        <button class="btn btn-outline btn-sm" data-demo="med">🏥 医学·免疫</button>
+  <div class="ocard-area">
+    <div class="ocard" id="ocard">
+      <div id="ofront-side">
+        <div class="tagline"><span id="otag">新卡片</span><span id="ospeak" style="display:none;cursor:pointer" title="发音">🔊</span></div>
+        <div class="qbig" id="oq"></div>
+      </div>
+      <div id="oback-side" style="display:none">
+        <div class="qkeep" id="oqkeep"></div>
+        <div class="abig" id="oa"></div>
+        <div class="src" id="osrc"></div>
       </div>
     </div>
-  </div>
-
-  <div class="card bg-base-100 shadow-xl border border-base-300 stagger mt-4" style="animation-delay:.07s">
-    <div class="card-body">
-      <h2 class="card-title text-base"><span class="w-6 h-6 grid place-items-center rounded-lg bg-primary text-primary-content text-xs font-bold">2</span>生成并导出</h2>
-      <label class="label">全局上限</label>
-      <input id="maxtotal" type="number" value="60" min="1" class="input input-bordered w-28">
-      <button class="btn btn-primary sheen mt-3" id="go">⚡ 生成卡片</button>
-      <div id="msg"></div>
-      <div id="result"></div>
-      <div id="cards" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2"></div>
-      <div id="howto" class="hidden mt-3 text-sm leading-7 opacity-80 border-t border-base-300 pt-3">
-        <b>导入 Anki / AnkiDroid：</b>下载 TSV → Anki 菜单「文件 → 导入」→ 字段分隔符 <code class="bg-base-200 rounded px-1">Tab</code> → 导入。<br>
-        <b>精美 .apkg 单文件</b>（渐变模板/深色模式/来源标签）：用 PC 版 <code class="bg-base-200 rounded px-1">anki-forge import 材料.md --deck 卡组名</code> 或图形界面 <code class="bg-base-200 rounded px-1">anki-forge ui</code>。<br>
-        <b>安卓主屏</b>：浏览器菜单 →「添加到主屏幕」，本页即独立离线应用。
-      </div>
+    <div class="swipe-hint" id="ohint">← 左滑标忘 · 右滑记住 · 点卡片翻面 →</div>
+    <div class="grades" id="grades">
+      <button class="g1" onclick="grade(1)">忘记<small>1</small></button>
+      <button class="g2" onclick="grade(2)">困难<small>2</small></button>
+      <button class="g3" onclick="grade(3)">良好<small>3</small></button>
+      <button class="g4" onclick="grade(4)">简单<small>4</small></button>
     </div>
   </div>
-
-  <footer class="text-center text-sm opacity-60 mt-8 leading-7">
-    anki-forge 开源（MIT）· 体验版仅支持纯文本，PDF/PPT/Word/Excel 请用 PC 版<br>结果仅供试用，导入与否由你决定
-  </footer>
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
-// FSRS 调度（ts-fsrs via jsdelivr ESM）。加载失败降级为简单两态——体验版
-// 的核心是先学起来，调度精度是加分项。进度存 localStorage，刷新不丢。
+let CARDS = [];
 let FSRS_LIB = null;
-import('https://cdn.jsdelivr.net/npm/ts-fsrs@5/+esm').then((m) => { FSRS_LIB = m; }).catch(() => {});
+import('https://cdn.jsdelivr.net/npm/ts-fsrs@5/+esm').then(m => { FSRS_LIB = m; }).catch(() => {});
 const LS_KEY = 'anki-forge-demo-progress';
 function loadProgress() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
 function saveProgress(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch {} }
-let LAST_CARDS = [];
-let STUDY = null;
+function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return 'k' + Math.abs(h).toString(36); }
 
 const DEMOS = {
-  words: { vocab: true, text: [
-    'abandon v. 放弃，抛弃。例：He was forced to abandon the plan.',
-    'abundant adj. 丰富的，充裕的。例：The region has abundant natural resources.',
-    'accelerate v. 加速，促进。例：Stress can accelerate the aging process.',
-    'alleviate v. 减轻，缓解。例：The medicine alleviated his pain quickly.',
-    'ambiguous adj. 模棱两可的。例：His answer was deliberately ambiguous.',
-    'anticipate v. 预期，预料。例：We anticipate strong opposition to the plan.',
-    'compensate v. 补偿，弥补。例：Nothing can compensate for the loss of time.',
-    'crucial adj. 至关重要的。例：Reading plays a crucial role in learning.',
-    'deteriorate v. 恶化，变坏。例：His health deteriorated rapidly last winter.',
-    'facilitate v. 促进，使便利。例：The new system facilitates online learning.',
-  ].join('\n') },
-  bio: { text: '线粒体是细胞进行有氧呼吸的主要场所，被称为细胞的动力车间。\n叶绿体是绿色植物进行光合作用的场所。\n细胞器包括线粒体、内质网、核糖体、高尔基体和溶酶体。\n糖类是生物体的主要能源物质。DNA 携带着生物体的遗传信息。\n蛋白质是生命活动的主要承担者，其基本组成单位是氨基酸。' },
-  hist: { text: '鸦片战争是 1840 年爆发的近代史开端事件。《南京条约》是中国近代史上第一个不平等条约。\n洋务运动是一场自上而下的自救运动。甲午战争战败标志着洋务运动的破产。\n辛亥革命推翻了清王朝的统治。五四运动是一场彻底的反帝反封建爱国运动。\n1921 年是中国共产党成立的时间。遵义会议是党的历史上生死攸关的转折点。' },
-  cs: { text: 'TCP 是一种面向连接的可靠传输协议。UDP 是一种无连接的不可靠传输协议。\nHTTP 的常见状态码包括 200、301、404 和 500。\nDNS 的作用是将域名解析为 IP 地址。\n三次握手是 TCP 建立连接的过程。包丢失会导致数据传输不完整。\nHTTPS 是在 HTTP 基础上加入 TLS 加密层的协议。' },
-  med: { text: '免疫系统是人体抵御病原体的防御体系。抗原是指能够触发免疫应答的物质。\n抗体包括 IgG、IgA、IgM、IgE 和 IgD 五类。\n炎症反应会导致局部红肿热痛。疫苗通过诱导机体产生抗体和记忆细胞来提供保护。\n过敏反应是免疫系统对无害物质的过度应答。' },
+  words: [
+    ['abandon', 'v. 放弃，抛弃', 'He was forced to abandon the plan.'],
+    ['abundant', 'adj. 丰富的，充裕的', 'The region has abundant natural resources.'],
+    ['accelerate', 'v. 加速，促进', 'Stress can accelerate the aging process.'],
+    ['alleviate', 'v. 减轻，缓解', 'The medicine alleviated his pain quickly.'],
+    ['ambiguous', 'adj. 模棱两可的', 'His answer was deliberately ambiguous.'],
+    ['anticipate', 'v. 预期，预料', 'We anticipate strong opposition to the plan.'],
+    ['compensate', 'v. 补偿，弥补', 'Nothing can compensate for the loss of time.'],
+    ['crucial', 'adj. 至关重要的', 'Reading plays a crucial role in learning.'],
+    ['deteriorate', 'v. 恶化，变坏', 'His health deteriorated rapidly last winter.'],
+    ['facilitate', 'v. 促进，使便利', 'The new system facilitates online learning.'],
+  ],
+  bio: '线粒体是细胞进行有氧呼吸的主要场所，被称为细胞的动力车间。\n叶绿体是绿色植物进行光合作用的场所。\n细胞器包括线粒体、内质网、核糖体、高尔基体和溶酶体。\n糖类是生物体的主要能源物质。DNA 携带着生物体的遗传信息。\n蛋白质是生命活动的主要承担者，其基本组成单位是氨基酸。',
+  hist: '鸦片战争是 1840 年爆发的近代史开端事件。《南京条约》是中国近代史上第一个不平等条约。\n洋务运动是一场自上而下的自救运动。甲午战争战败标志着洋务运动的破产。\n辛亥革命推翻了清王朝的统治。五四运动是一场彻底的反帝反封建爱国运动。\n1921 年是中国共产党成立的时间。遵义会议是党的历史上生死攸关的转折点。',
+  cs: 'TCP 是一种面向连接的可靠传输协议。UDP 是一种无连接的不可靠传输协议。\nHTTP 的常见状态码包括 200、301、404 和 500。\nDNS 的作用是将域名解析为 IP 地址。\n三次握手是 TCP 建立连接的过程。包丢失会导致数据传输不完整。\nHTTPS 是在 HTTP 基础上加入 TLS 加密层的协议。',
+  med: '免疫系统是人体抵御病原体的防御体系。抗原是指能够触发免疫应答的物质。\n抗体包括 IgG、IgA、IgM、IgE 和 IgD 五类。\n炎症反应会导致局部红肿热痛。疫苗通过诱导机体产生抗体和记忆细胞来提供保护。\n过敏反应是免疫系统对无害物质的过度应答。',
+};
+$('demos').onclick = (e) => {
+  const d = e.target.dataset.demo; if (!d) return;
+  if (d === 'words') {
+    $('text').value = DEMOS.words.map(([w, def, ex]) => w + ' ' + def + '。例：' + ex).join('\n');
+  } else {
+    $('text').value = DEMOS[d];
+  }
+  generate();
 };
 
 function sentences(text) {
@@ -135,7 +236,7 @@ function extractCards(text, cap) {
     for (const r of rules()) {
       const m = s.match(r.re);
       if (!m) continue;
-      let c; try { c = r.make(m); } catch (e) { continue; }
+      let c; try { c = r.make(m); } catch { continue; }
       if (!c.front || !c.back || c.front.length < 4 || c.front.length > 80 || c.back.length < 3 || c.back.length > 220) continue;
       const key = c.front.toLowerCase().replace(/\s+/g, ' ');
       if (seen.has(key)) continue;
@@ -145,231 +246,168 @@ function extractCards(text, cap) {
   return out;
 }
 
-$('demos').onclick = (e) => {
-  const d = e.target.closest('[data-demo]')?.dataset.demo;
-  if (!d) return;
-  $('text').value = DEMOS[d].text;
-  $('text').dataset.mode = DEMOS[d].vocab ? 'vocab' : '';
-  msg('已加载示例「' + e.target.textContent + '」— 点生成看看效果', 'info');
-};
-
-$('go').onclick = () => {
+function generate() {
   const text = $('text').value.trim();
-  if (!text) return msg('先粘贴材料，或点上方任一学科示例', true);
-  const cap = Math.max(1, +$('maxtotal').value || 60);
-  let cards;
-  if ($('text').dataset.mode === 'vocab') {
-    cards = text.split(/\n+/).map((l) => l.trim()).filter(Boolean).slice(0, cap).map((l) => {
-      const m = l.match(/^(\S+)\s+(.+?)(?:。\s*例：(.+?))?\.?$/);
-      return m ? { front: m[1], back: (m[2] || '') + (m[3] ? '\n' + m[3] : '') } : null;
-    }).filter(Boolean);
-  } else {
-    cards = extractCards(text, cap);
-  }
-  if (cards.length === 0) return msg('没能抽出卡片——材料里需要有「X 是 Y」「X 包括…」「A 导致 B」或数字事实句式', true);
-  render(cards);
-};
+  if (!text) return msg('先粘贴材料，或点上方示例', true);
+  const isWords = text.split(/\n/).every((l) => l.trim() === '' || /^[a-zA-Z][\w'-]*\s/.test(l.trim()));
+  CARDS = isWords
+    ? text.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => {
+        const m = l.match(/^(\S+)\s+(.+?)(?:。\s*例：(.+?))?\.?$/);
+        return m ? { front: m[1], back: (m[2] || '') + (m[3] ? '\n' + m[3] : ''), source: '' } : null;
+      }).filter(Boolean)
+    : extractCards(text, 60);
+  if (CARDS.length === 0) return msg('没能抽出卡片——需要「X 是 Y」「X 包括…」「A 导致 B」或词表行', true);
+  msg('✓ 生成 ' + CARDS.length + ' 张卡片。点击问题看答案；点「开始学习」进入复习模式。');
+  $('search').value = '';
+  renderList('');
+  $('listwrap').style.display = 'block';
+}
+$('go').onclick = generate;
 
-function render(cards) {
-  LAST_CARDS = cards;
-  msg('✨ 抽出 ' + cards.length + ' 张卡片。点击卡片翻面看答案。');
-  if (!$('studybar')) {
-    const bar = document.createElement('div');
-    bar.id = 'studybar';
-    bar.className = 'chips';
-    bar.style.marginTop = '12px';
-    bar.innerHTML = '<button class="chip" id="study-go" style="border-color:var(--b1);color:var(--b1)">🎯 进入学习模式（FSRS 间隔重复）</button>';
-    $('cards').before(bar);
-    bar.querySelector('#study-go').onclick = openStudy;
-  }
-  $('cards').innerHTML = cards.map((c, i) =>
-    '<div class="card-toggle card bg-base-200 border border-base-300 stagger" style="animation-delay:' + Math.min(i * 35, 550) + 'ms" onclick="this.classList.toggle(\'shown\')">' +
-    '<div class="face-a card-body p-4"><div class="text-[10px] font-extrabold tracking-widest text-primary">Q</div><div class="text-sm leading-relaxed">' + esc(c.front) + '</div><div class="mt-auto text-[10px] opacity-50 pt-2">↻ 点击看答案</div></div>' +
-    '<div class="face-b card-body p-4 bg-primary text-primary-content rounded-2xl"><div class="text-[10px] font-extrabold tracking-widest">A</div><div class="text-sm leading-relaxed">' + esc(c.back).replace(/\n/g, '<br>') + '</div><div class="mt-auto text-[10px] opacity-70 pt-2">↻ 点击翻回</div></div>' +
-    '</div>').join('');
-  $('studybtn').style.display = 'inline-flex';
-  const tsv = cards.map((c) => c.front + '\t' + c.back.replace(/\n/g, ' ')).join('\n');
-  $('howto').classList.remove('hidden');
-  let dl = document.getElementById('dl');
-  if (!dl) {
-    dl = document.createElement('button');
-    dl.id = 'dl'; dl.className = 'btn btn-outline btn-sm mt-3';
-    dl.textContent = '⬇ 下载 TSV（Anki 可导入）';
-    $('cards').after(dl);
-  }
-  dl.onclick = () => {
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([tsv], { type: 'text/plain;charset=utf-8' }));
-    a.download = 'anki-forge-cards.txt'; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  };
+$('search').oninput = (e) => renderList(e.target.value.trim().toLowerCase());
+function renderList(q) {
+  const shown = CARDS.filter((c) => !q || c.front.toLowerCase().includes(q) || c.back.toLowerCase().includes(q));
+  $('count').textContent = '共 ' + CARDS.length + ' 张' + (q ? '，匹配 ' + shown.length + ' 张' : '');
+  $('clist').innerHTML = shown.length === 0
+    ? '<div class="empty">没有匹配的卡片</div>'
+    : shown.map((c) => {
+        const i = CARDS.indexOf(c);
+        return '<div class="citem" data-i="' + i + '">' +
+          '<div class="qrow" onclick="this.parentElement.classList.toggle(\'open\')">' +
+          '<div class="qnum">' + (i + 1) + '</div><div class="qtext">' + esc(c.front) + '</div></div>' +
+          '<div class="atext">' + esc(c.back).replace(/\n/g, '<br>') +
+          (c.source ? '<div class="src">📍 ' + esc(c.source) + '</div>' : '') + '</div></div>';
+      }).join('');
 }
 
-function msg(m, isErr) {
-  $('msg').innerHTML = '<div class="alert ' + (isErr ? 'alert-error' : 'alert-success') + ' text-sm py-2">' + esc(m) + '</div>';
-}
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-
-// ---------- 学习模式 overlay（FSRS 调度 + localStorage 持久化）----------
-function openStudy() {
-  if (LAST_CARDS.length === 0) return;
+let STUDY = null;
+$('study-go').onclick = () => {
+  if (CARDS.length === 0) return;
   const progress = loadProgress();
   const now = Date.now();
   STUDY = {
-    cards: LAST_CARDS.map((c) => {
-      const key = 'k' + hash(c.front);
+    deck: '体验牌组',
+    cards: CARDS.map((c) => {
+      const key = hash(c.front);
       const saved = progress[key];
-      return {
-        front: c.front, back: c.back, key,
-        state: saved ? saved.state : 0, due: saved ? saved.due : 0,
-        reps: saved ? saved.reps : 0, fsrsCard: null,
-      };
+      return { ...c, key, due: saved ? saved.due : 0, state: saved ? saved.state : 0, reps: saved ? saved.reps : 0 };
     }),
-    queue: [], index: 0, done: 0, again: 0, againList: [], startedAt: Date.now(), muted: false,
+    queue: [], index: 0, done: 0, again: 0,
   };
-  // 到期优先：新卡与到期卡排前
-  STUDY.queue = STUDY.cards
-    .filter((c) => c.due <= now || c.state === 0)
-    .sort((a, b) => a.due - b.due);
-  if (STUDY.queue.length === 0) {
-    // 全部未到期：复习到期最早的一批（提前学不惩罚）
-    STUDY.queue = [...STUDY.cards].sort((a, b) => a.due - b.due).slice(0, 10);
-  }
-  renderStudyOverlay();
-}
-function hash(s) { let h = 0; for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h).toString(36); }
-function renderStudyOverlay() {
-  const remaining = STUDY.queue.length - STUDY.index;
-  const el = document.getElementById('study-overlay') || (() => {
-    const d = document.createElement('div');
-    d.id = 'study-overlay';
-    d.style.cssText = 'position:fixed;inset:0;z-index:60;background:var(--bg,#0a0b10);overflow-y:auto';
-    document.body.appendChild(d);
-    return d;
-  })();
+  STUDY.queue = STUDY.cards.filter((c) => c.due <= now).sort((a, b) => a.due - b.due);
+  if (STUDY.queue.length === 0) STUDY.queue = [...STUDY.cards].sort((a, b) => a.due - b.due).slice(0, 10);
+  $('overlay').classList.add('on');
+  renderStudy();
+};
+
+function renderStudy() {
   if (STUDY.index >= STUDY.queue.length) {
-    const secs = Math.round((Date.now() - STUDY.startedAt) / 1000);
-    const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 0;
-    el.innerHTML = '<div style="max-width:520px;margin:10vh auto;text-align:center;padding:0 20px">' +
-      '<svg width="120" height="120" viewBox="0 0 120 120" style="margin:0 auto">' +
-      '<circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>' +
-      '<circle cx="60" cy="60" r="52" fill="none" stroke="#818cf8" stroke-width="10" stroke-linecap="round" ' +
-      'stroke-dasharray="' + (2 * Math.PI * 52) + '" stroke-dashoffset="' + (2 * Math.PI * 52 * (1 - acc / 100)) + '" ' +
-      'transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)"/>' +
-      '<text x="60" y="68" text-anchor="middle" fill="currentColor" font-size="26" font-weight="800">' + acc + '%</text></svg>' +
-      '<h2 style="margin-top:16px">本轮完成</h2>' +
-      '<p style="color:var(--sub);margin-top:8px;font-size:14px">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 用时 ' + secs + ' 秒<br>标忘的卡会更快回来。</p>' +
-      '<div class="chips" style="justify-content:center;margin-top:16px">' +
-      (STUDY.againList.length ? '<button class="chip" onclick="reStudyAgain()">\u{1F501} 重刷标忘的 ' + STUDY.againList.length + ' 张</button>' : '') +
-      '<button class="chip" onclick="document.getElementById(\'study-overlay\').remove()">返回</button></div></div>';
+    const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 100;
+    $('ocard').innerHTML = '<div class="done-box"><div class="big">本轮完成</div>' +
+      '<div class="sub">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 正确率 ' + acc + '%<br>标忘的卡会更快回来。进度已保存。</div></div>';
+    $('grades').style.display = 'none';
+    $('ohint').textContent = '退出后可再次「开始学习」继续。';
+    $('ocount').textContent = '';
     return;
   }
   const c = STUDY.queue[STUDY.index];
-  const progressPct = Math.round(STUDY.index / STUDY.queue.length * 100);
-  const speakable = /[a-zA-Z]{3,}/.test(c.front);
-  el.innerHTML = '<div style="max-width:560px;margin:6vh auto;padding:0 20px">' +
-    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
-    '<div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden">' +
-    '<div style="height:100%;width:' + progressPct + '%;background:linear-gradient(90deg,#818cf8,#c084fc);border-radius:99px;transition:width .3s"></div></div>' +
-    '<span style="font-size:12px;color:var(--sub);white-space:nowrap">' + (STUDY.index + 1) + '/' + STUDY.queue.length + '</span>' +
-    '<span style="font-size:12px;color:var(--sub);cursor:pointer" onclick="document.getElementById(\'study-overlay\').remove()">\u2715</span></div>' +
-    '<div id="swipe-card" class="swipe-card card bg-base-100" style="min-height:230px;touch-action:none;user-select:none">' +
-    '<div class="face-a" style="padding:28px 22px;display:flex;flex-direction:column;justify-content:center;min-height:230px">' +
-    '<div style="text-align:center;font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:14px">' +
-    (c.state === 0 ? '新卡片' : '复习') +
-    (speakable ? ' <span id="tts-btn" style="cursor:pointer;opacity:.6" onclick="event.stopPropagation();speak(\'' + c.front.replace(/[^a-zA-Z0-9' -]/g, '') + '\')">\u{1F50A}</span>' : '') + '</div>' +
-    '<div style="text-align:center;font-size:clamp(19px,4.5vw,26px);font-weight:700;line-height:1.4">' + esc(c.front) + '</div>' +
-    '<div style="text-align:center;margin-top:22px;font-size:12px;color:var(--sub)">点击翻面 · 或左右滑动评分</div></div>' +
-    '<div class="face-b" style="display:none;padding:28px 22px;flex-direction:column;justify-content:center;min-height:230px">' +
-    '<div style="text-align:center;font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:14px">答案</div>' +
-    '<div style="text-align:center;font-size:clamp(17px,3.8vw,22px);font-weight:650;line-height:1.55">' + esc(c.back) + '</div>' +
-    (c.source ? '<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--sub)">\u{1F4CD} ' + esc(c.source) + '</div>' : '') + '</div>' +
-    '</div>' +
-    '<div style="text-align:center;margin-top:14px;font-size:13px;color:var(--ink);opacity:.85">' +
-    '\u2190 左滑标忘 · 右滑记住 \u2192<br><span style="font-size:11px;opacity:.7">或点翻面后用按钮评分</span></div>' +
-    '<div class="chips" style="justify-content:center;margin-top:12px">' +
-    '<button class="chip" onclick="sflip()">翻面</button>' +
-    '<button class="chip" onclick="sgrade(1)" style="border-color:rgba(248,113,113,.4)">重来</button>' +
-    '<button class="chip" onclick="sgrade(3)" style="border-color:rgba(52,211,153,.4)">记住</button>' +
-    (speakable ? '<button class="chip" onclick="speak(\'' + c.front.replace(/[^a-zA-Z0-9' -]/g, '') + '\')">\u{1F50A}</button>' : '') +
-    '</div>';
-  attachSwipe(el.querySelector('#swipe-card'), c);
-  if (speakable && !STUDY.muted) speak(c.front);
+  $('ofront-side').style.display = 'block';
+  $('oback-side').style.display = 'none';
+  $('grades').style.display = 'none';
+  $('ohint').style.display = 'block';
+  $('otag').textContent = c.state === 0 ? '新卡片' : '复习 · 第 ' + (c.reps + 1) + ' 次';
+  $('oq').textContent = c.front;
+  $('oqkeep').textContent = c.front;
+  $('oa').textContent = c.back || '（无补充）';
+  $('osrc').textContent = c.source ? '📍 ' + c.source : '';
+  $('ospeak').style.display = /[a-zA-Z]{3,}/.test(c.front) ? 'inline-block' : 'none';
+  $('ocard').style.transform = '';
+  $('oprogress').style.width = Math.round(STUDY.index / STUDY.queue.length * 100) + '%';
+  $('ocount').textContent = (STUDY.index + 1) + '/' + STUDY.queue.length;
 }
-function attachSwipe(cardEl, c) {
-  let startX = null, dx = 0;
-  const start = (x) => { startX = x; cardEl.style.transition = 'none'; };
-  const move = (x) => {
-    if (startX === null) return;
-    dx = x - startX;
-    cardEl.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.06 + 'deg)';
-    cardEl.style.opacity = String(1 - Math.min(Math.abs(dx) / 400, 0.5));
-  };
-  const end = () => {
-    if (startX === null) return;
-    cardEl.style.transition = 'transform .25s, opacity .25s';
-    if (Math.abs(dx) > 90) {
-      const dir = dx > 0 ? 1 : -1;
-      cardEl.style.transform = 'translateX(' + dir * 500 + 'px) rotate(' + dir * 30 + 'deg)';
-      cardEl.style.opacity = '0';
-      sgrade(dir > 0 ? 3 : 1);
-    } else {
-      cardEl.style.transform = ''; cardEl.style.opacity = '1';
-    }
-    startX = null;
-  };
-  cardEl.onpointerdown = (e) => { start(e.clientX); cardEl.setPointerCapture(e.pointerId); };
-  cardEl.onpointermove = (e) => move(e.clientX);
-  cardEl.onpointerup = end;
-  cardEl.onpointercancel = end;
+function showBack() {
+  $('ofront-side').style.display = 'none';
+  $('oback-side').style.display = 'block';
+  $('grades').style.display = 'grid';
+  $('ohint').style.display = 'none';
 }
-function sflip() {
-  const card = document.getElementById('swipe-card');
-  const a = card.querySelector('.face-a'), b = card.querySelector('.face-b');
-  const showingB = b.style.display !== 'none';
-  a.style.display = showingB ? 'none' : 'flex';
-  b.style.display = showingB ? 'flex' : 'none';
-}
-function speak(text) {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = /[\u4e00-\u9fa5]/.test(text) ? 'zh-CN' : 'en-US';
-    u.rate = 0.92;
-    speechSynthesis.cancel(); speechSynthesis.speak(u);
-  } catch {}
-}
-function reStudyAgain() {
-  const againKeys = STUDY.againList.map((x) => x.key);
-  STUDY.cards.forEach((c) => { if (againKeys.includes(c.key)) c.due = 0; });
-  STUDY.queue = STUDY.cards.filter((c) => againKeys.includes(c.key));
-  STUDY.index = 0; STUDY.done = 0; STUDY.again = 0; STUDY.againList = [];
-  renderStudyOverlay();
-}
-function sgrade(rating) {
+$('ocard').onclick = () => {
+  if ($('oback-side').style.display !== 'block') showBack();
+};
+$('ospeak').onclick = (e) => { e.stopPropagation(); speak($('oq').textContent); };
+
+async function grade(rating) {
   const c = STUDY.queue[STUDY.index];
-  if (rating === 1) { STUDY.again++; STUDY.againList.push(c); }
+  if (rating === 1) STUDY.again++;
   STUDY.done++; STUDY.index++;
   const progress = loadProgress();
   const entry = progress[c.key] || { state: 0, due: 0, reps: 0 };
-  entry.reps = entry.reps + 1;
+  entry.reps++;
   if (FSRS_LIB) {
     try {
-      const { fsrs, generatorParameters, createEmptyCard, Rating } = FSRS_LIB;
+      const { fsrs, generatorParameters, createEmptyCard } = FSRS_LIB;
       const sched = fsrs(generatorParameters({ enable_fuzz: true }));
       const fsrsCard = entry.fsrsCard || createEmptyCard(new Date());
       const next = sched.next(fsrsCard, new Date(), rating);
       entry.fsrsCard = { due: next.card.due.toISOString(), stability: next.card.stability, state: next.card.state };
       entry.due = next.card.due.getTime();
       entry.state = next.card.state;
-    } catch { entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 6 * 3600000 : 86400000); }
+    } catch { entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 21600000 : 86400000); }
   } else {
-    entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 6 * 3600000 : 86400000);
+    entry.due = Date.now() + (rating === 1 ? 60000 : rating === 2 ? 21600000 : 86400000);
   }
   progress[c.key] = entry;
   saveProgress(progress);
-  renderStudyOverlay();
+  renderStudy();
 }
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+(function attachSwipe() {
+  const card = $('ocard');
+  let startX = null, dx = 0;
+  card.addEventListener('pointerdown', (e) => {
+    if ($('oback-side').style.display === 'block') return;
+    startX = e.clientX; dx = 0; card.style.transition = 'none';
+  });
+  card.addEventListener('pointermove', (e) => {
+    if (startX === null) return;
+    dx = e.clientX - startX;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.05 + 'deg)';
+  });
+  card.addEventListener('pointerup', (e) => {
+    if (startX === null) return;
+    card.style.transition = 'transform .25s';
+    if (Math.abs(dx) > 90) {
+      const dir = dx > 0 ? 1 : -1;
+      card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 25 + 'deg)';
+      setTimeout(() => { card.style.transform = ''; grade(dir > 0 ? 3 : 1); }, 180);
+    } else {
+      card.style.transform = '';
+    }
+    startX = null;
+  });
+})();
+
+function speak(text) {
+  try {
+    const u = new SpeechSynthesisUtterance(text || '');
+    u.lang = /[\u4e00-\u9fa5]/.test(text) ? 'zh-CN' : 'en-US';
+    u.rate = 0.92;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch {}
+}
+$('ox').onclick = () => { $('overlay').classList.remove('on'); renderList($('search').value.trim().toLowerCase()); };
+
+function msg(m, isErr) {
+  $('msg').innerHTML = '<div class="' + (isErr ? 'msg err' : 'msg ok') + '" style="display:block">' + esc(m) + '</div>';
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+document.addEventListener('keydown', (e) => {
+  if (!$('overlay').classList.contains('on')) return;
+  if (e.code === 'Space' && $('oback-side').style.display !== 'block') { e.preventDefault(); showBack(); }
+  if (['1', '2', '3', '4'].includes(e.key) && $('oback-side').style.display === 'block') { e.preventDefault(); grade(Number(e.key)); }
+});
+
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

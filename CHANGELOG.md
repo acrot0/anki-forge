@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.18.0] — 2026-09-25
+
+### Changed
+
+- **Mobile-first rebuild of the demo page**: single-column app layout
+  (520px cap), compact card list where tapping a question expands its
+  answer, searchable by front and back text.
+- **Answer keeps the question visible**: the study card now shows the
+  original question above the answer after flipping — no more losing
+  context mid-review (flagged by the user, verified by DOM assertions).
+
 ## [0.17.0] — 2026-09-25
 
 ### Added
