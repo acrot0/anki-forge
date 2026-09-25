@@ -10,9 +10,9 @@
 <meta name="theme-color" content="#f8fafc">
 <style>
   :root {
-    --bg: #f4f6f8; --card: #ffffff; --ink: #17202a; --sub: #5c6773; --faint: #8a93a0;
-    --line: #e3e8ee; --teal: #0d9488; --teal-d: #0f766e; --teal-bg: #e6f5f3;
-    --err: #dc2626;
+    --bg: #0f1122; --card: #181b39; --ink: #eef0f8; --sub: #9aa3c0; --faint: #6a7194;
+    --line: rgba(170,160,247,.16); --teal: #21a582; --teal-d: #2ec4a0; --teal-bg: rgba(33,165,130,.14);
+    --err: #fd5f6c;
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -36,21 +36,21 @@
   textarea {
     width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 12px;
     padding: 11px 13px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
-    background: #fbfcfd; color: var(--ink); outline: none; transition: border-color .15s;
+    background: rgba(24,27,57,.5); color: var(--ink); outline: none; transition: border-color .15s;
   }
   textarea:focus { border-color: var(--teal); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-  .chip { border: 1px solid var(--line); background: #fff; color: var(--sub); cursor: pointer;
+  .chip { border: 1px solid var(--line); background: var(--card); color: var(--sub); cursor: pointer;
           font-size: 12.5px; padding: 7px 12px; border-radius: 99px; transition: all .15s; }
   .chip:active { transform: scale(.96); }
 
   .btn {
     display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
     border: 0; cursor: pointer; font-size: 14.5px; font-weight: 650; color: #fff; min-height: 46px;
-    background: linear-gradient(135deg, #0d9488, #0f766e); border-radius: 12px; margin-top: 12px; box-shadow: 0 2px 10px rgba(13,148,136,.25); transition: background .15s, transform .1s;
+    background: linear-gradient(135deg, #21a582, #178a6e); box-shadow: 0 2px 12px rgba(33,165,130,.3); border-radius: 12px; margin-top: 12px; box-shadow: 0 2px 10px rgba(13,148,136,.25); transition: background .15s, transform .1s;
   }
   .btn:active { transform: scale(.98); }
-  .btn.secondary { background: var(--teal-bg); color: var(--teal-d); width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
+  .btn.secondary { background: rgba(33,165,130,.14); color: #2ec4a0; width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
 
   .msg { margin: 10px 0 0; font-size: 13px; padding: 9px 12px; border-radius: 10px; display: none; }
   .msg.err { display: block; background: #fef2f2; color: var(--err); }
@@ -58,12 +58,12 @@
 
   .search { position: relative; margin-top: 10px; }
   .search input { width: 100%; border: 1.5px solid var(--line); border-radius: 11px; padding: 9px 12px 9px 36px;
-    font-size: 13.5px; background: #fbfcfd; color: var(--ink); outline: none; }
+    font-size: 13.5px; background: rgba(24,27,57,.5); color: var(--ink); outline: none; }
   .search input:focus { border-color: var(--teal); }
   .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--faint); fill: none; stroke-width: 2; }
   .clist { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
-  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; transition: border-color .15s, box-shadow .15s; }
-  .citem:hover { border-color: rgba(13,148,136,.4); box-shadow: 0 2px 10px rgba(13,148,136,.08); }
+  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--card); transition: border-color .15s, box-shadow .15s; }
+  .citem:hover { border-color: rgba(170,160,247,.45); background: rgb(32,35,73); box-shadow: 0 2px 12px rgba(0,0,0,.3); }
   .citem .qrow { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; cursor: pointer; }
   .citem .qnum { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--teal-bg);
     color: var(--teal-d); font-size: 11px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
@@ -90,7 +90,7 @@
   .obar .prog i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: 99px; transition: width .3s; }
   .obar .cnt { font-size: 12px; color: var(--sub); }
   .ocard-area { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; }
-  .ocard { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px;
+  .ocard { background: var(--card); border: 1px solid rgba(170,160,247,.18); border-radius: 16px; padding: 22px 18px;
     min-height: 210px; display: flex; flex-direction: column; box-shadow: 0 2px 14px rgba(16,24,40,.06);
     touch-action: pan-y; user-select: none; -webkit-user-select: none; }
   .ocard .tagline { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--teal); margin-bottom: 10px;
@@ -100,10 +100,10 @@
   .ocard .qkeep { font-size: 13px; font-weight: 600; color: var(--sub); border-bottom: 1px dashed var(--line);
     padding-bottom: 10px; margin-bottom: 12px; line-height: 1.5; }
   .ocard .src { font-size: 11.5px; color: var(--faint); margin-top: 12px; }
-  .ocard .speak-btn { border: 1px solid var(--line); background: #fff; border-radius: 99px; width: 34px; height: 34px;
+  .ocard .speak-btn { border: 1px solid var(--line); background: var(--card); border-radius: 99px; width: 34px; height: 34px;
     display: grid; place-items: center; cursor: pointer; }
   .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
-  .grades button { border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 11px 0;
+  .grades button { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 11px 0;
     font-size: 13px; font-weight: 650; cursor: pointer; color: var(--ink); }
   .grades button small { display: block; font-size: 10.5px; font-weight: 400; color: var(--faint); margin-top: 2px; }
   .grades .g1 { border-color: #fecaca; } .grades .g1:active { background: #fef2f2; }

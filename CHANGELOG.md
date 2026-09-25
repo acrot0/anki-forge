@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.20.0] — 2026-09-25
+
+### Changed
+
+- **Palette rebuilt from memcode's production tokens** (MIT, 407 stars — the
+  most polished open-source SRS): layered indigo-black canvas (#0f1122 →
+  #181b39 cards), lavender accent (#aaa0f7), teal learn-button green
+  (#21a582), and the hover treatment memcode uses (background lightens one
+  step, subtle text glow). Verified via DOM assertions.
+
 ## [0.19.0] — 2026-09-25
 
 ### Added
