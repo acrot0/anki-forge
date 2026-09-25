@@ -16,10 +16,34 @@
     --primary: #4f46e5; --primary-hover: #4338ca; --primary-fg: #ffffff;
     --ring: rgba(79,70,229,.28);
     --destructive: #dc2626;
+    --tint: #eef2ff;
+    --ok-bg: #f0fdf4; --ok-bd: #bbf7d0; --ok-fg: #065f46;
+    --err-bg: #fef2f2; --err-bd: #fecaca;
+    --g1-bg: #fef2f2; --g1-bd: #fecaca;
+    --g2-bg: #fffbeb; --g2-bd: #fde68a;
+    --g3-bg: #eef2ff; --g3-bd: #c7d2fe;
+    --g4-bg: #eff6ff; --g4-bd: #bfdbfe;
     --radius: 10px;
     --shadow-xs: 0 1px 2px rgba(0,0,0,.05);
     --shadow-card: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
     --ease: cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #101012; --foreground: #f4f4f5;
+      --muted: #18181b; --muted-fg: #a1a1aa;
+      --border: #27272a; --accent: #1f1f23;
+      --ring: rgba(99,102,241,.35);
+      --tint: rgba(99,102,241,.16);
+      --ok-bg: #0c1f16; --ok-bd: #14532d; --ok-fg: #6ee7b7;
+      --err-bg: #2a1214; --err-bd: #7f1d1d;
+      --g1-bg: #2a1214; --g1-bd: #7f1d1d;
+      --g2-bg: #271a05; --g2-bd: #92400e;
+      --g3-bg: #1e1b4b; --g3-bd: #3730a3;
+      --g4-bg: #172554; --g4-bd: #1e40af;
+      --shadow-xs: none;
+      --shadow-card: 0 4px 16px rgba(0,0,0,.4);
+    }
   }
   * { box-sizing: border-box; margin: 0; }
   body {
@@ -41,7 +65,7 @@
   .hd a:hover { color: var(--foreground); background: var(--accent); }
 
   .hero { padding: clamp(26px, 5vw, 44px) 20px clamp(20px, 4vw, 32px); text-align: center;
-    background: linear-gradient(180deg, rgba(79,70,229,.05), transparent); }
+    background: linear-gradient(180deg, var(--tint), transparent); }
   .hero h1 { font-size: clamp(24px, 5vw, 34px); font-weight: 800; letter-spacing: -.03em; line-height: 1.2; }
   .hero h1 span { background: linear-gradient(100deg, #4f46e5, #9333ea); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero p { margin: 12px auto 0; max-width: 460px; font-size: 14.5px; color: var(--muted-fg); line-height: 1.7; }
@@ -62,13 +86,13 @@
 
   .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
   .chip { border: 1px solid var(--border); background: var(--background); color: var(--muted-fg); cursor: pointer;
-          font-size: 13px; padding: 6px 12px; border-radius: 8px; transition: all .12s; font-weight: 500; }
-  .chip:hover { border-color: var(--primary); color: var(--primary); background: #eef2ff; }
+          font-size: 13px; padding: 9px 14px; border-radius: 8px; transition: all .12s; font-weight: 500; }
+  .chip:hover { border-color: var(--primary); color: var(--primary); background: var(--tint); }
   .chip:active { transform: scale(.97); }
 
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
-    border: 0; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--primary-fg); min-height: 40px;
+    border: 0; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--primary-fg); min-height: 44px;
     background: var(--primary); border-radius: 8px; margin-top: 14px;
     transition: background .15s, transform .1s, box-shadow .15s;
     box-shadow: 0 1px 2px rgba(79,70,229,.3);
@@ -78,13 +102,13 @@
   .btn:disabled { opacity: .5; cursor: default; }
   .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .btn.outline { background: var(--background); color: var(--foreground); border: 1px solid var(--border);
-                 box-shadow: var(--shadow-xs); width: auto; font-size: 13px; min-height: 36px; padding: 0 14px; margin: 0; }
+                 box-shadow: var(--shadow-xs); width: auto; font-size: 13px; min-height: 40px; padding: 0 14px; margin: 0; }
   .btn.outline:hover { background: var(--accent); box-shadow: none; }
 
   .msg { margin: 12px 0 0; font-size: 13px; padding: 10px 13px; border-radius: 8px; display: none;
          border: 1px solid; animation: fade .2s both; }
-  .msg.err { display: block; background: #fef2f2; border-color: #fecaca; color: var(--destructive); }
-  .msg.ok { display: block; background: #f0fdf4; border-color: #bbf7d0; color: #065f46; }
+  .msg.err { display: block; background: var(--err-bg); border-color: var(--err-bd); color: var(--destructive); }
+  .msg.ok { display: block; background: var(--ok-bg); border-color: var(--ok-bd); color: var(--ok-fg); }
 
   .search { position: relative; margin-top: 12px; }
   .search input { width: 100%; border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px 9px 36px;
@@ -97,23 +121,27 @@
   .citem { border: 1px solid var(--border); border-radius: 10px; background: var(--background); overflow: hidden;
     transition: border-color .15s, box-shadow .15s; }
   .citem:hover { border-color: #c7c7cf; box-shadow: var(--shadow-xs); }
-  .citem .qrow { display: flex; align-items: center; gap: 10px; padding: 11px 13px; cursor: pointer; }
-  .citem .qnum { flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--primary); background: #eef2ff;
+  .citem .qrow { display: flex; align-items: center; gap: 10px; padding: 11px 13px; cursor: pointer; min-height: 44px; }
+  .citem .qnum { flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--primary); background: var(--tint);
     border-radius: 6px; padding: 3px 8px; font-variant-numeric: tabular-nums; }
   .citem .qtext { font-size: 13.5px; font-weight: 500; line-height: 1.45; flex: 1; }
   .citem .chev { width: 15px; height: 15px; stroke: var(--muted-fg); fill: none; stroke-width: 2; transition: transform .2s; flex-shrink: 0; }
   .citem.open .chev { transform: rotate(90deg); }
   .citem .atext { padding: 11px 13px 12px 13px; font-size: 13.5px; line-height: 1.65; color: var(--foreground);
-    border-top: 1px solid var(--border); background: #fafafa; display: none; }
+    border-top: 1px solid var(--border); background: var(--muted); display: none; }
   .citem.open .atext { display: block; animation: fade .2s both; }
   .citem.match-none { display: none; }
   @keyframes fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
   .count-row .cnt { font-size: 12.5px; color: var(--muted-fg); }
-  .empty { text-align: center; padding: 26px 10px; color: var(--muted-fg); font-size: 13px; }
+  .empty { text-align: center; padding: 30px 10px; color: var(--muted-fg); font-size: 13px; }
+  .empty svg { width: 26px; height: 26px; stroke: var(--border); fill: none; stroke-width: 1.8; margin-bottom: 6px; }
+  .empty .sub { font-size: 12px; color: #a1a1aa; margin-top: 3px; }
   .exports { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
   .fade-in { animation: fade .25s both; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+  /* ---- 学习覆盖层：3D 翻卡 + 滑动视觉确认 ---- */
   .overlay { position: fixed; inset: 0; z-index: 50; background: var(--background); display: none; flex-direction: column; }
   .overlay.on { display: flex; }
   .obar { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
@@ -123,35 +151,44 @@
   .obar .prog i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width .25s; }
   .obar .cnt { font-size: 12px; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
   .ocard-area { flex: 1; display: flex; flex-direction: column; padding: 20px 16px; max-width: 560px; margin: 0 auto; width: 100%; }
-  .ocard { flex: 1; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 14px;
-    background: var(--background); padding: 24px 22px; user-select: none; -webkit-user-select: none;
-    touch-action: pan-y; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
-  .ocard .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-  .ocard .meta .tag { font-size: 11px; font-weight: 600; color: var(--primary); background: #eef2ff;
+  .ocard { flex: 1; position: relative; border: 1px solid var(--border); border-radius: 14px; min-height: 0;
+    background: var(--background); user-select: none; -webkit-user-select: none; touch-action: pan-y;
+    perspective: 1400px; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+  .ocard .tint { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; z-index: 3; }
+  .flip { position: absolute; inset: 0; transform-style: preserve-3d;
+    transition: transform .32s cubic-bezier(.34,1.25,.5,1); }
+  .flip.flipped { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; padding: 24px 22px; overflow-y: auto; }
+  .face.back { transform: rotateY(180deg); }
+  .face .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .face .meta .tag { font-size: 11px; font-weight: 600; color: var(--primary); background: var(--tint);
     border-radius: 5px; padding: 3px 9px; }
-  .ocard .meta .speak { cursor: pointer; color: var(--muted-fg); }
-  .ocard .meta .speak svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
-  .ocard .q { font-size: 18px; font-weight: 600; line-height: 1.55; text-align: center; margin: auto 0; }
-  .ocard .qkeep { font-size: 13px; font-weight: 500; color: var(--muted-fg); text-align: center;
+  .face .meta .speak { cursor: pointer; color: var(--muted-fg); display: inline-flex; padding: 6px; }
+  .face .meta .speak svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .face .q { font-size: 18px; font-weight: 600; line-height: 1.55; text-align: center; margin: auto 0; }
+  .face .qkeep { font-size: 13px; font-weight: 500; color: var(--muted-fg); text-align: center;
     border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; line-height: 1.5; }
-  .ocard .a { font-size: 15.5px; line-height: 1.7; color: var(--foreground); text-align: center; }
-  .ocard .src { font-size: 11.5px; color: var(--muted-fg); margin-top: 12px; }
-  .ocard .hint { text-align: center; font-size: 11.5px; color: #a1a1aa; margin-top: auto; padding-top: 14px; }
+  .face .a { font-size: 15.5px; line-height: 1.7; color: var(--foreground); text-align: center; margin: auto 0; }
+  .face .src { font-size: 11.5px; color: var(--muted-fg); margin-top: 12px; }
+  .face .hint { text-align: center; font-size: 11.5px; color: #a1a1aa; margin-top: auto; padding-top: 14px; }
   .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 0 4px; }
   .grades button { border: 1px solid var(--border); background: var(--background); border-radius: 8px;
-    padding: 10px 0; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--foreground); transition: all .12s; }
+    padding: 12px 0; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--foreground); transition: all .12s; }
   .grades button small { display: block; font-size: 10px; font-weight: 400; color: var(--muted-fg); margin-top: 1px; }
   .grades button:hover { transform: translateY(-1px); }
-  .grades .g1 { color: var(--destructive); } .grades .g1:hover { background: #fef2f2; border-color: #fecaca; }
-  .grades .g2 { color: #d97706; } .grades .g2:hover { background: #fffbeb; border-color: #fde68a; }
-  .grades .g3 { color: var(--primary); } .grades .g3:hover { background: #eef2ff; border-color: #c7d2fe; }
-  .grades .g4 { color: #2563eb; } .grades .g4:hover { background: #eff6ff; border-color: #bfdbfe; }
-  .done-box { text-align: center; padding: 36px 16px; }
+  .grades .g1 { color: var(--destructive); } .grades .g1:hover { background: var(--g1-bg); border-color: var(--g1-bd); }
+  .grades .g2 { color: #d97706; } .grades .g2:hover { background: var(--g2-bg); border-color: var(--g2-bd); }
+  .grades .g3 { color: var(--primary); } .grades .g3:hover { background: var(--g3-bg); border-color: var(--g3-bd); }
+  .grades .g4 { color: #2563eb; } .grades .g4:hover { background: var(--g4-bg); border-color: var(--g4-bd); }
+  .done-box { text-align: center; padding: 36px 16px; position: absolute; inset: 0; display: flex;
+    flex-direction: column; justify-content: center; }
   .done-box .big { font-size: 19px; font-weight: 650; color: var(--primary); }
   .done-box .sub { font-size: 13px; color: var(--muted-fg); margin-top: 8px; line-height: 1.8; }
-  .fade-in { animation: fade .25s both; }
-  .slide-in { animation: slideIn .3s var(--ease, .3s) both; }
-  @keyframes slideIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+  .slide-hint { text-align: center; font-size: 11.5px; color: #a1a1aa; padding-top: 8px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body>
@@ -182,7 +219,7 @@
     <div id="filechip"></div>
     <div class="sec" style="margin-top:14px"><span class="n">2</span>或粘贴文本</div>
     <textarea id="text" placeholder="粘贴讲义片段，支持句式：X 是 Y / X 包括 A、B / A 导致 B / 数字年代事实"></textarea>
-    <div class="row">
+    <div class="row" id="demos">
       <button class="chip" data-demo="words">考研英语词表</button>
       <button class="chip" data-demo="bio">生物·细胞</button>
       <button class="chip" data-demo="hist">中国近代史</button>
@@ -226,16 +263,20 @@
   </div>
   <div class="ocard-area">
     <div class="ocard" id="ocard">
-      <div id="ofront-side">
-        <div class="meta"><span class="tag" id="otag">新卡片</span><span class="speak" id="ospeak" title="发音" onclick="event.stopPropagation();speak($('oq').textContent)"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span></div>
-        <div class="q" id="oq" onclick="showBack()"></div>
-        <div class="hint">点击卡片或按空格显示答案</div>
+      <div class="tint" id="otint"></div>
+      <div class="flip" id="oflip">
+        <div class="face front">
+          <div class="meta"><span class="tag" id="otag">新卡片</span><span class="speak" id="ospeak" title="发音"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span></div>
+          <div class="q" id="oq"></div>
+          <div class="hint">点击卡片或按空格显示答案</div>
+        </div>
+        <div class="face back">
+          <div class="qkeep" id="oqkeep"></div>
+          <div class="a" id="oa"></div>
+          <div class="src" id="osrc"></div>
+        </div>
       </div>
-      <div id="oback-side" style="display:none">
-        <div class="qkeep" id="oqkeep"></div>
-        <div class="a" id="oa"></div>
-        <div class="src" id="osrc"></div>
-      </div>
+      <div class="done-box" id="odone" style="display:none"></div>
     </div>
     <div class="grades" id="grades">
       <button class="g1" onclick="grade(1)">忘记<small>1</small></button>
@@ -243,7 +284,7 @@
       <button class="g3" onclick="grade(3)">良好<small>3</small></button>
       <button class="g4" onclick="grade(4)">简单<small>4</small></button>
     </div>
-    <div class="hint" style="text-align:center;font-size:11.5px;color:#a1a1aa;padding-top:8px" id="swipe-hint">
+    <div class="slide-hint" id="swipe-hint">
       ← 左滑标忘 · 右滑记住 →（也可点卡片翻面）
     </div>
   </div>
@@ -432,7 +473,8 @@ function renderList(q) {
   const shown = CARDS.filter((c) => !q || c.front.toLowerCase().includes(q) || c.back.toLowerCase().includes(q));
   $('count').textContent = '共 ' + CARDS.length + ' 张' + (q ? '，匹配 ' + shown.length + ' 张' : '');
   $('clist').innerHTML = shown.length === 0
-    ? '<div class="empty">没有匹配的卡片</div>'
+    ? '<div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>' +
+      '<div>没有匹配的卡片</div><div class="sub">换个关键词，或清空搜索看全部</div></div>'
     : shown.map((c) => {
         const i = CARDS.indexOf(c);
         return '<div class="citem" data-i="' + i + '">' +
@@ -464,43 +506,50 @@ $('study-go').onclick = () => {
   renderStudy();
 };
 
+function resetFlip() {
+  // 瞬时归位（不播回翻动画），下一张从正面开始
+  const f = $('oflip');
+  f.style.transition = 'none';
+  f.classList.remove('flipped');
+  void f.offsetHeight;
+  f.style.transition = '';
+}
 function renderStudy() {
   if (STUDY.index >= STUDY.queue.length) {
     const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 100;
-    $('ocard').innerHTML = '<div class="done-box"><div class="big">本轮完成</div>' +
+    $('oflip').style.display = 'none';
+    $('odone').style.display = 'flex';
+    $('odone').innerHTML = '<div class="big">本轮完成</div>' +
       '<div class="sub">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 正确率 ' + acc + '%<br>标忘的卡会更快回来。进度已保存。</div>' +
-      '<button class="btn" style="margin:16px auto 0;width:auto;padding:0 18px;min-height:38px" onclick="location.reload()">再学一轮</button></div>';
+      '<button class="btn" style="margin:16px auto 0;width:auto;padding:0 18px" onclick="location.reload()">再学一轮</button>';
     $('grades').style.display = 'none';
     $('swipe-hint').textContent = '';
     $('ocount').textContent = '';
     return;
   }
+  $('oflip').style.display = '';
+  $('odone').style.display = 'none';
   const c = STUDY.queue[STUDY.index];
-  $('ofront-side').style.display = 'block';
-  $('oback-side').style.display = 'none';
-  $('grades').style.display = 'none';
-  $('swipe-hint').style.display = 'block';
+  resetFlip();
   $('otag').textContent = c.state === 0 ? '新卡片' : '复习 · 第 ' + (c.reps + 1) + ' 次';
   $('oq').textContent = c.front;
   $('oqkeep').textContent = c.front;
   $('oa').textContent = c.back || '（无补充）';
   $('osrc').textContent = c.source ? '📍 ' + c.source : '';
   $('ospeak').style.display = /[a-zA-Z]{3,}/.test(c.front) ? 'inline-flex' : 'none';
-  $('ocard').style.transform = '';
-  $('ocard').style.animation = 'none';
-  void $('ocard').offsetHeight;
-  $('ocard').style.animation = 'fade .25s both';
+  $('grades').style.display = 'none';
+  $('swipe-hint').style.display = 'block';
   $('oprogress').style.width = Math.round(STUDY.index / STUDY.queue.length * 100) + '%';
   $('ocount').textContent = (STUDY.index + 1) + '/' + STUDY.queue.length;
 }
 function showBack() {
-  $('ofront-side').style.display = 'none';
-  $('oback-side').style.display = 'block';
+  $('oflip').classList.add('flipped');
   $('grades').style.display = 'grid';
   $('swipe-hint').style.display = 'none';
 }
+const isFlipped = () => $('oflip').classList.contains('flipped');
 $('ocard').onclick = () => {
-  if ($('oback-side').style.display !== 'block') showBack();
+  if ($('oflip').style.display !== 'none' && !isFlipped()) showBack();
 };
 $('ospeak').onclick = (e) => { e.stopPropagation(); speak($('oq').textContent); };
 
@@ -529,22 +578,28 @@ async function grade(rating) {
   renderStudy();
 }
 
-// 滑动评分（pointer 统一触摸/鼠标）
+// 滑动评分（pointer 统一触摸/鼠标）：拖动时红/绿染色给出方向确认
 (function attachSwipe() {
   const card = $('ocard');
+  const tint = $('otint');
   let startX = null, dx = 0;
   card.addEventListener('pointerdown', (e) => {
-    if ($('oback-side').style.display === 'block') return;
+    if (isFlipped()) return;
     startX = e.clientX; dx = 0; card.style.transition = 'none';
   });
   card.addEventListener('pointermove', (e) => {
     if (startX === null) return;
     dx = e.clientX - startX;
     card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.04 + 'deg)';
+    tint.style.background = dx < 0
+      ? 'linear-gradient(90deg, rgba(220,38,38,.14), transparent 60%)'
+      : 'linear-gradient(-90deg, rgba(22,163,74,.14), transparent 60%)';
+    tint.style.opacity = Math.min(1, Math.abs(dx) / 90);
   });
-  card.addEventListener('pointerup', (e) => {
+  card.addEventListener('pointerup', () => {
     if (startX === null) return;
     card.style.transition = 'transform .25s';
+    tint.style.opacity = 0;
     if (Math.abs(dx) > 90) {
       const dir = dx > 0 ? 1 : -1;
       card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 22 + 'deg)';
@@ -597,9 +652,29 @@ function download(name, content, mime) {
 
 document.addEventListener('keydown', (e) => {
   if (!$('overlay').classList.contains('on')) return;
-  if (e.code === 'Space' && $('oback-side').style.display !== 'block') { e.preventDefault(); showBack(); }
-  if (['1', '2', '3', '4'].includes(e.key) && $('oback-side').style.display === 'block') { e.preventDefault(); grade(Number(e.key)); }
+  if (e.code === 'Space' && !isFlipped()) { e.preventDefault(); showBack(); }
+  if (['1', '2', '3', '4'].includes(e.key) && isFlipped()) { e.preventDefault(); grade(Number(e.key)); }
 });
+
+// 深色 theme-color 跟随系统
+(function () {
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const set = () => document.querySelector('meta[name=theme-color]').content = mq.matches ? '#101012' : '#ffffff';
+  set(); mq.addEventListener?.('change', set);
+})();
+
+// 交互层存活自检：id 丢失会让页面「看起来正常但全死」——加载后自查并挂出显眼错误条。
+(function selfCheck() {
+  const need = ['text', 'go', 'search', 'study-go', 'ocard', 'oflip', 'overlay', 'clist', 'msg', 'demos', 'filebtn', 'exp-menu'];
+  const missing = need.filter((id) => !document.getElementById(id));
+  const deadHandlers = [$('go').onclick, $('study-go').onclick, $('filebtn').onclick, $('demos').onclick, $('exp-menu').onclick].some((h) => h === null);
+  if (missing.length || deadHandlers) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;z-index:99;background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca;padding:10px 16px;font-size:13px;font-weight:600';
+    bar.textContent = '⚠ 界面初始化异常（' + (missing.length ? '缺少 ' + missing.join(', ') : '事件绑定失败') + '）——请刷新页面，若持续出现请到 GitHub 反馈';
+    document.body.prepend(bar);
+  }
+})();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>

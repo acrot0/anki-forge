@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.26.0] — 2026-09-25
+
+### Fixed
+
+- **`#demos` regression, third occurrence**: the 0.25 shadcn rewrite of the
+  demo page dropped the demo-chips container id again, killing every handler
+  bound after it. Now defended by the self-check (which itself was restored —
+  it had been lost in the same rewrite) and verified end-to-end in a browser.
+- **Swipe grading never worked in the full UI**: the 0.24 handler referenced
+  demo-page element ids (`#ocard`/`#oback-side`) that do not exist in
+  webui.html; the TypeError died silently. Rebound to the real study card.
+
+### Changed
+
+- **Full webui redesigned in the same shadcn language** as the demo: zinc +
+  indigo tokens, 3D flip card (rotateY, ~320 ms spring), swipe-tint direction
+  feedback (red = again, green = good), system dark mode, focus-visible rings,
+  44 px touch targets, and zero CDN dependencies (DaisyUI/Tailwind removed —
+  the SEA binary UI now works fully offline).
+- **Multi-format export in the full UI**: `/api/export` now serves
+  TSV / CSV / JSON / Markdown alongside .apkg.
+- Study-card flip animation per competitor research: 200–300 ms spring,
+  interruptible; reduced-motion honored.
+
 ## [0.25.0] — 2026-09-25
 
 ### Changed

@@ -57,6 +57,10 @@ function json(res, code, body) {
   res.end(JSON.stringify(body));
 }
 
+function csvCell(s) {
+  return '"' + String(s ?? '').replace(/"/g, '""') + '"';
+}
+
 async function readBody(req) {
   let size = 0;
   const chunks = [];
@@ -181,8 +185,30 @@ async function handle(req, res) {
         res.end(bytes);
         return;
       }
-      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end(job.cards.map((c) => [c.front, c.back, (c.tags ?? []).join(' ')].join('\t')).join('\n'));
+      const specs = {
+        tsv: ['text/plain; charset=utf-8', 'txt'],
+        csv: ['text/csv; charset=utf-8', 'csv'],
+        json: ['application/json; charset=utf-8', 'json'],
+        md: ['text/markdown; charset=utf-8', 'md'],
+      };
+      const spec = specs[format];
+      if (!spec) throw new Error('unknown export format: ' + format);
+      const cards = job.cards;
+      let content;
+      if (format === 'json') {
+        content = JSON.stringify(cards.map(({ front, back, source, tags }) => ({ front, back, source, tags })), null, 2);
+      } else if (format === 'csv') {
+        content = 'front,back,source\n' + cards.map((c) => [c.front, c.back, c.source].map(csvCell).join(',')).join('\n');
+      } else if (format === 'md') {
+        content = cards.map((c, i) => (i + 1) + '. **' + c.front + '**\n   ' + (c.back || '').replace(/\n/g, ' ')).join('\n\n');
+      } else {
+        content = cards.map((c) => [c.front, (c.back || '').replace(/\n/g, ' '), (c.tags ?? []).join(' ')].join('\t')).join('\n');
+      }
+      res.writeHead(200, {
+        'content-type': spec[0],
+        'content-disposition': `attachment; filename="${encodeURIComponent(safeName)}.${spec[1]}"`,
+      });
+      res.end(content);
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/anki') {

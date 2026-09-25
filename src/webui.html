@@ -1,109 +1,244 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="corporate">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>anki-forge — 讲义变卡组</title>
-<meta name="theme-color" content="#f8fafc">
-<link href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" rel="stylesheet" type="text/css">
-<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<meta name="theme-color" content="#ffffff">
 <style>
-  :root { --teal: #0d9488; --teal-d: #0f766e; }
-  .stagger { animation: rise .45s cubic-bezier(.16,1,.3,1) both; }
-  @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-  .fade-in { animation: fade .3s both; } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-  .pop { animation: pop .25s cubic-bezier(.34,1.5,.5,1) both; } @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
-  .sheen { position: relative; overflow: hidden; }
-  .sheen::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, rgba(255,255,255,.35) 50%, transparent 65%); background-size: 220% 100%; background-position: 220% 0; transition: background-position .6s; }
-  .sheen:hover::after { background-position: -120% 0; }
-  .icon { width: 1.1em; height: 1.1em; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
-  .icon-lg { width: 1.6em; height: 1.6em; }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  /* shadcn/ui zinc token + indigo 强调；零 CDN 依赖——SEA 二进制离线可用 */
+  :root {
+    --background: #ffffff; --foreground: #09090b;
+    --muted: #fafafa; --muted-fg: #71717a;
+    --border: #e4e4e7; --accent: #f4f4f5;
+    --primary: #4f46e5; --primary-hover: #4338ca; --primary-fg: #ffffff;
+    --ring: rgba(79,70,229,.28);
+    --destructive: #dc2626;
+    --tint: #eef2ff;
+    --ok-bg: #f0fdf4; --ok-bd: #bbf7d0; --ok-fg: #065f46;
+    --err-bg: #fef2f2; --err-bd: #fecaca;
+    --shadow-xs: 0 1px 2px rgba(0,0,0,.05);
+    --ease: cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: #101012; --foreground: #f4f4f5;
+      --muted: #18181b; --muted-fg: #a1a1aa;
+      --border: #27272a; --accent: #1f1f23;
+      --ring: rgba(99,102,241,.35);
+      --tint: rgba(99,102,241,.16);
+      --ok-bg: #0c1f16; --ok-bd: #14532d; --ok-fg: #6ee7b7;
+      --err-bg: #2a1214; --err-bd: #7f1d1d;
+      --shadow-xs: none;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--muted); color: var(--foreground); min-height: 100vh;
+    font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .hd { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 13px 20px; border-bottom: 1px solid var(--border);
+        background: var(--background); position: sticky; top: 0; z-index: 40; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; letter-spacing: -.01em; white-space: nowrap; }
+  .brand .mark { width: 26px; height: 26px; border-radius: 7px; background: linear-gradient(135deg, #4f46e5, #7c3aed); display: grid; place-items: center; }
+  .brand .mark svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .hd a { font-size: 13px; font-weight: 500; color: var(--muted-fg); text-decoration: none; padding: 6px 10px; border-radius: 8px; transition: all .15s; }
+  .hd a:hover { color: var(--foreground); background: var(--accent); }
+  .pill { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted-fg); min-width: 0;
+          border: 1px solid var(--border); background: var(--background); border-radius: 99px; padding: 4px 11px; }
+  .pill > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill .dot { width: 7px; height: 7px; border-radius: 99px; background: #a1a1aa; transition: background .2s; }
+  .pill.ok .dot { background: #16a34a; } .pill.bad .dot { background: var(--destructive); }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 26px 20px 60px; }
+  .lead h1 { font-size: clamp(21px, 3.5vw, 26px); font-weight: 800; letter-spacing: -.02em; }
+  .lead p { font-size: 13.5px; color: var(--muted-fg); margin-top: 4px; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 18px; }
+  @media (min-width: 860px) { .grid { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+  .card { background: var(--background); border: 1px solid var(--border); border-radius: 12px;
+          box-shadow: var(--shadow-xs); overflow: hidden; }
+  .card-hd { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600;
+             padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .card-hd svg { width: 15px; height: 15px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .card-bd { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 12px; }
+
+  label { font-size: 12.5px; font-weight: 500; color: var(--muted-fg); display: block; margin-bottom: 5px; }
+  input[type=text], input[type=number], input[type=password], select {
+    width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px;
+    font-size: 13.5px; background: var(--background); color: var(--foreground); outline: none;
+    transition: border-color .15s, box-shadow .15s; font-family: inherit; }
+  input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 22px 14px; text-align: center;
+          cursor: pointer; transition: border-color .15s, background .15s; }
+  .drop:hover, .drop.over { border-color: var(--primary); background: var(--tint); }
+  .drop svg { width: 20px; height: 20px; stroke: var(--muted-fg); fill: none; stroke-width: 2;
+              stroke-linecap: round; stroke-linejoin: round; margin-bottom: 5px; }
+  .drop .t1 { font-size: 13.5px; font-weight: 500; }
+  .drop .t2 { font-size: 12px; color: var(--muted-fg); margin-top: 2px; }
+  .flist { display: flex; flex-direction: column; gap: 6px; }
+  .fitem { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px;
+           border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; animation: fade .2s both; }
+  .fitem .sz { color: var(--muted-fg); font-size: 12px; flex-shrink: 0; }
+  .fitem a { color: var(--destructive); text-decoration: none; padding: 2px 6px; flex-shrink: 0; }
+
+  .seg { display: grid; border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 3px; background: var(--muted); }
+  .seg.c2 { grid-template-columns: 1fr 1fr; } .seg.c3 { grid-template-columns: 1fr 1fr 1fr; }
+  .seg button { border: 0; background: transparent; border-radius: 6px; padding: 7px 4px; font-size: 12.5px;
+                font-weight: 500; color: var(--muted-fg); cursor: pointer; transition: all .12s; font-family: inherit; }
+  .seg button.on { background: var(--background); color: var(--foreground); box-shadow: var(--shadow-xs); font-weight: 600; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    border: 0; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--primary-fg); min-height: 44px;
+    background: var(--primary); border-radius: 8px; font-family: inherit;
+    transition: background .15s, transform .1s, box-shadow .15s; box-shadow: 0 1px 2px rgba(79,70,229,.3); }
+  .btn:hover:not(:disabled) { background: var(--primary-hover); box-shadow: 0 4px 14px rgba(79,70,229,.3); }
+  .btn:active:not(:disabled) { transform: scale(.985); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn.outline { background: var(--background); color: var(--foreground); border: 1px solid var(--border);
+                 box-shadow: var(--shadow-xs); width: auto; font-size: 13px; min-height: 38px; padding: 0 14px; }
+  .btn.outline:hover { background: var(--accent); box-shadow: none; background: var(--accent); }
+  details.adv { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  details.adv summary { list-style: none; cursor: pointer; padding: 11px 14px; font-size: 13px; font-weight: 500; user-select: none; }
+  details.adv summary::-webkit-details-marker { display: none; }
+  details.adv summary::after { content: '▸'; float: right; color: var(--muted-fg); transition: transform .15s; }
+  details.adv[open] summary::after { transform: rotate(90deg); }
+  details.adv .adv-bd { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--border); }
+
+  .msg { font-size: 13px; padding: 10px 13px; border-radius: 8px; border: 1px solid; animation: fade .2s both; }
+  .msg.err { background: var(--err-bg); border-color: var(--err-bd); color: var(--destructive); }
+  .msg.ok { background: var(--ok-bg); border-color: var(--ok-bd); color: var(--ok-fg); }
+  .skeleton { height: 38px; border-radius: 8px; background: linear-gradient(90deg, var(--muted) 25%, var(--accent) 45%, var(--muted) 65%);
+              background-size: 220% 100%; animation: shimmer 1.3s infinite; }
+  @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -60% 0; } }
+  @keyframes fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+  .empty { text-align: center; padding: 22px 10px; color: var(--muted-fg); font-size: 13px; }
+  .empty svg { width: 24px; height: 24px; stroke: var(--border); fill: none; stroke-width: 1.8; margin-bottom: 6px; }
+  button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* 学习卡：3D 翻卡 + 滑动染色（与体验页同款） */
+  .ocard { position: relative; border: 1px solid var(--border); border-radius: 12px; min-height: 230px;
+    background: var(--muted); user-select: none; -webkit-user-select: none; touch-action: pan-y; perspective: 1400px; }
+  .ocard .tint { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; z-index: 3; }
+  .flip { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .32s cubic-bezier(.34,1.25,.5,1); }
+  .flip.flipped { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; padding: 18px 20px; overflow-y: auto; }
+  .face.back { transform: rotateY(180deg); }
+  .face .tag { font-size: 10.5px; font-weight: 600; color: var(--primary); background: var(--tint);
+    border-radius: 5px; padding: 3px 9px; align-self: flex-start; letter-spacing: .02em; }
+  .face .q { font-size: 16.5px; font-weight: 600; line-height: 1.55; text-align: center; margin: auto 0; }
+  .face .qkeep { font-size: 12.5px; font-weight: 500; color: var(--muted-fg); text-align: center;
+    border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 13px; line-height: 1.5; }
+  .face .a { font-size: 14.5px; line-height: 1.7; text-align: center; margin: auto 0; }
+  .face .src { font-size: 11.5px; color: var(--muted-fg); margin-top: 10px; }
+  .face .hint { text-align: center; font-size: 11px; color: #a1a1aa; margin-top: auto; padding-top: 12px; }
+  .grades { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 10px; }
+  .grades button { border: 1px solid var(--border); background: var(--background); border-radius: 8px;
+    padding: 11px 0; font-size: 12.5px; font-weight: 500; cursor: pointer; color: var(--foreground);
+    transition: all .12s; font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .grades button svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+  .grades button:hover { transform: translateY(-1px); }
+  .grades .g1 { color: var(--destructive); } .grades .g1:hover { background: var(--err-bg); border-color: var(--err-bd); }
+  .grades .g2 { color: #d97706; } .grades .g3 { color: var(--primary); }
+  .grades .g4 { color: #2563eb; }
+  .study-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted-fg); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+  .exrow { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hidden { display: none !important; }
+  .stagger { animation: fade .35s var(--ease) both; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body>
-<div class="navbar bg-base-100 border-b border-base-200 sticky top-0 z-40">
-  <div class="navbar-start">
-    <div class="flex items-center gap-2">
-      <svg class="icon icon-lg text-teal-600" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 7h7"/></svg>
-      <span class="font-bold text-lg">anki-forge</span>
-    </div>
+<div class="hd">
+  <div class="brand">
+    <span class="mark"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3 3h7z"/></svg></span>
+    anki-forge
   </div>
-  <div class="navbar-center hidden sm:flex"><span class="text-sm opacity-60">讲义变卡组 · 学习工具</span></div>
-  <div class="navbar-end"><a href="https://github.com/acrot0/anki-forge" class="btn btn-ghost btn-sm">GitHub</a></div>
+  <span class="pill" id="anki"><span class="dot"></span><span id="anki-text">检查 Anki 连接…</span></span>
+  <a href="https://github.com/acrot0/anki-forge" target="_blank">GitHub</a>
 </div>
 
-<div class="mx-auto max-w-5xl px-4 pt-8 pb-20">
-  <div class="flex flex-wrap items-end justify-between gap-3 mb-5">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">生成、学习、记住。</h1>
-      <p class="text-sm opacity-70 mt-1">讲义进卡片出，FSRS 间隔重复算法安排每一次复习。</p>
-    </div>
-    <div class="badge badge-lg gap-2 bg-base-200 border-base-300"><span id="anki-dot" class="inline-block w-2 h-2 rounded-full bg-neutral"></span><span id="anki-text" class="text-xs">检查 Anki 连接…</span></div>
+<div class="wrap">
+  <div class="lead">
+    <h1>生成、学习、记住。</h1>
+    <p>讲义进卡片出，FSRS 间隔重复算法安排每一次复习。</p>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-    <!-- 生成区 -->
-    <div class="card bg-base-100 shadow-sm border border-base-200 stagger">
-      <div class="card-body gap-3">
-        <h2 class="card-title text-base"><svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>生成卡片</h2>
-        <div class="border border-dashed border-base-300 rounded-2xl p-5 text-center cursor-pointer hover:border-teal-600 transition-colors" id="drop">
-          <input type="file" id="file" multiple accept=".pdf,.pptx,.docx,.xlsx,.md,.markdown,.txt" class="hidden">
-          <svg class="icon icon-lg mx-auto mb-1 opacity-70" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
-          <div class="text-sm"><b>拖拽文件</b>或点击选择</div>
-          <div class="text-xs opacity-60 mt-0.5">PDF 文字层 / PPTX / DOCX / XLSX / MD / TXT · 多选</div>
+  <div class="grid">
+    <!-- 生成 -->
+    <div class="card stagger">
+      <div class="card-hd"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>生成卡片</div>
+      <div class="card-bd">
+        <div class="drop" id="drop">
+          <input type="file" id="file" multiple accept=".pdf,.pptx,.docx,.xlsx,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp" class="hidden">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+          <div class="t1">拖拽文件，或点击选择</div>
+          <div class="t2">PDF 文字层 / PPTX / DOCX / XLSX / MD / TXT / 图片 OCR · 多选</div>
         </div>
-        <div id="files" class="flex flex-col gap-2"></div>
-        <label class="label text-sm pt-1">目标牌组（:: 分级）</label>
-        <input type="text" id="deck" placeholder="考研::政治" class="input input-bordered w-full">
-        <div class="grid grid-cols-2 gap-3">
-          <div><label class="label text-sm">每节最多卡片</label><input type="number" id="maxcards" value="10" min="1" max="50" class="input input-bordered w-full"></div>
-          <div><label class="label text-sm">并发数</label><input type="number" id="conc" value="4" min="1" max="12" class="input input-bordered w-full"></div>
+        <div class="flist" id="files"></div>
+        <div><label>目标牌组（:: 分级）</label><input type="text" id="deck" placeholder="考研::政治"></div>
+        <div class="two">
+          <div><label>每节最多卡片</label><input type="number" id="maxcards" value="10" min="1" max="50"></div>
+          <div><label>并发数</label><input type="number" id="conc" value="4" min="1" max="12"></div>
         </div>
-        <details class="collapse collapse-arrow bg-base-200 rounded-xl">
-          <summary class="collapse-title text-sm font-semibold py-2 min-h-0">高级选项（引擎 / 模型 / 样式）</summary>
-          <div class="collapse-content text-sm">
-            <label class="label text-sm pt-0">生成引擎</label>
-            <div class="grid grid-cols-2 bg-base-100 border border-base-300 rounded-xl p-1 gap-1" id="engine">
-              <button data-v="llm" class="btn btn-sm border-0 bg-teal-600 text-white hover:bg-teal-700">AI 生成</button>
-              <button data-v="local" class="btn btn-sm btn-ghost">本地规则引擎（免 Key）</button>
-            </div>
-            <div id="llmfields" class="mt-2">
-              <div class="grid grid-cols-2 gap-3">
-                <div><label class="label text-sm">服务商</label><select id="provider" class="select select-bordered w-full select-sm"></select></div>
-                <div><label class="label text-sm">模型</label><input type="text" id="model" placeholder="deepseek-chat" class="input input-bordered w-full input-sm"></div>
+        <details class="adv">
+          <summary>高级选项（引擎 / 模型 / 样式）</summary>
+          <div class="adv-bd">
+            <div><label>生成引擎</label>
+              <div class="seg c2" id="engine">
+                <button data-v="llm" class="on">AI 生成</button>
+                <button data-v="local">本地规则引擎（免 Key）</button>
               </div>
-              <label class="label text-sm">API Key</label>
-              <input type="password" id="key" placeholder="仅本次使用" class="input input-bordered w-full input-sm">
             </div>
-            <label class="label text-sm pt-1">卡片样式</label>
-            <div class="grid grid-cols-3 bg-base-100 border border-base-300 rounded-xl p-1 gap-1" id="style">
-              <button data-v="basic" class="btn btn-sm border-0 bg-teal-600 text-white hover:bg-teal-700">问答</button>
-              <button data-v="cloze" class="btn btn-sm btn-ghost">填空</button>
-              <button data-v="vocab" class="btn btn-sm btn-ghost">单词</button>
+            <div id="llmfields">
+              <div class="two">
+                <div><label>服务商</label><select id="provider"></select></div>
+                <div><label>模型</label><input type="text" id="model" placeholder="deepseek-chat"></div>
+              </div>
+              <div style="margin-top:10px"><label>API Key</label><input type="password" id="key" placeholder="仅本次使用，不落盘"></div>
+            </div>
+            <div><label>卡片样式</label>
+              <div class="seg c3" id="style">
+                <button data-v="basic" class="on">问答</button>
+                <button data-v="cloze">填空</button>
+                <button data-v="vocab">单词</button>
+              </div>
             </div>
           </div>
         </details>
-        <button class="btn border-0 bg-teal-600 text-white hover:bg-teal-700 sheen" id="go">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>生成卡片
+        <button class="btn" id="go">
+          <svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>生成卡片
         </button>
         <div id="genmsg"></div>
+        <div class="exrow hidden" id="exrow">
+          <button class="btn outline" data-fmt="apkg">⬇ .apkg（导入 Anki）</button>
+          <button class="btn outline" data-fmt="tsv">TSV</button>
+          <button class="btn outline" data-fmt="csv">CSV</button>
+          <button class="btn outline" data-fmt="json">JSON</button>
+          <button class="btn outline" data-fmt="md">Markdown</button>
+        </div>
       </div>
     </div>
 
-    <!-- 学习区 -->
-    <div class="card bg-base-100 shadow-sm border border-base-200 stagger" style="animation-delay:.08s">
-      <div class="card-body gap-3">
-        <h2 class="card-title text-base"><svg class="icon" viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>学习模式</h2>
-        <div id="study-home">
-          <p class="text-sm opacity-70">生成过的牌组会出现在这里。用 FSRS 间隔重复算法安排复习——在浏览器里直接刷卡，进度自动保存。</p>
-          <label class="label text-sm pt-2">牌组名</label>
-          <input type="text" id="study-deck" placeholder="与生成时的牌组名一致" class="input input-bordered w-full">
-          <button class="btn btn-outline w-full mt-2 border-teal-600 text-teal-700 hover:bg-teal-600 hover:text-white" id="study-open">
-            <svg class="icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>打开学习队列
-          </button>
-          <div id="study-meta"></div>
-        </div>
+    <!-- 学习 -->
+    <div class="card stagger" style="animation-delay:.08s">
+      <div class="card-hd"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>学习模式</div>
+      <div class="card-bd" id="study-home">
+        <p style="font-size:13px;color:var(--muted-fg)">生成过的牌组会出现在这里。FSRS 间隔重复安排复习——直接在浏览器刷卡，进度自动保存。</p>
+        <div><label>牌组名</label><input type="text" id="study-deck" placeholder="与生成时的牌组名一致"></div>
+        <button class="btn outline" id="study-open" style="width:100%">
+          <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 0 3 3h7z"/></svg>打开学习队列
+        </button>
+        <div id="study-meta"></div>
         <div id="study-session" class="hidden"></div>
       </div>
     </div>
@@ -111,31 +246,20 @@
 </div>
 <script>
 const $ = (id) => document.getElementById(id);
-// 深色跟随系统：学习工具白天浅色护眼、夜间深色省力
-const applyTheme = () => {
-  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.dataset.theme = dark ? 'dark' : 'corporate';
-  document.querySelector('meta[name=theme-color]').content = dark ? '#0b0f19' : '#f8fafc';
-};
-applyTheme();
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
 let FILES = [];
 let STYLE = 'basic';
 let ENGINE = 'llm';
 let JOB = null;
 let POLL = null;
-let STUDY = null; // {deck, queue, index}
+let STUDY = null; // {deck, queue, index, done, again}
 
 // ---------- icons ----------
 const I = {
-  check: '<svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
-  x: '<svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
-  minus: '<svg class="icon" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>',
-  star: '<svg class="icon" viewBox="0 0 24 24"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
-  brain: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/></svg>',
-  file: '<svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
-  zap: '<svg class="icon" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
-  book: '<svg class="icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>',
+  x: '<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  minus: '<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>',
+  file: '<svg class="ficon" viewBox="0 0 24 24" style="width:14px;height:14px;stroke:var(--muted-fg);fill:none;stroke-width:2;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>',
 };
 
 fetch('/api/providers').then(r => r.json()).then(p => {
@@ -143,19 +267,26 @@ fetch('/api/providers').then(r => r.json()).then(p => {
     '<option value="' + k + '">' + k + '（' + v.hint + '）</option>').join('');
   $('provider').onchange = () => { $('model').value = p[$('provider').value].hint; };
   $('provider').onchange();
-});
+}).catch(() => {});
 
 fetch('/api/check').then(r => r.json()).then(c => {
-  $('anki-dot').className = 'inline-block w-2 h-2 rounded-full ' + (c.ok ? 'bg-success' : 'bg-error');
+  $('anki').classList.add(c.ok ? 'ok' : 'bad');
   $('anki-text').textContent = c.ok ? 'Anki 已连接（v' + c.version + '）' : 'Anki 未运行 — 可用 .apkg 导入';
-});
+}).catch(() => { $('anki').classList.add('bad'); $('anki-text').textContent = 'Anki 状态未知'; });
+
+// 深色 theme-color 跟随系统
+(function () {
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const set = () => document.querySelector('meta[name=theme-color]').content = mq.matches ? '#101012' : '#ffffff';
+  set(); mq.addEventListener?.('change', set);
+})();
 
 // ---------- files ----------
 const drop = $('drop');
 drop.onclick = () => $('file').click();
-drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('border-teal-600', 'bg-teal-50'); };
-drop.ondragleave = () => drop.classList.remove('border-teal-600', 'bg-teal-50');
-drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('border-teal-600', 'bg-teal-50'); addFiles(e.dataTransfer.files); };
+drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
 $('file').onchange = (e) => addFiles(e.target.files);
 function addFiles(list) {
   for (const f of list) {
@@ -166,23 +297,22 @@ function addFiles(list) {
 }
 function renderFiles() {
   $('files').innerHTML = FILES.map((f, i) =>
-    '<div class="flex justify-between items-center bg-base-200 rounded-xl px-3 py-2 text-sm">' +
-    '<span class="flex items-center gap-2">' + I.file + esc(f.name) + '</span>' +
-    '<span class="opacity-60 text-xs">' + (f.bytes/1024).toFixed(0) + ' KB <a href="#" onclick="FILES.splice(' + i + ',1);renderFiles();return false" class="text-error">✕</a></span></div>').join('');
+    '<div class="fitem"><span style="display:flex;align-items:center;gap:8px;min-width:0">' + I.file +
+    '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(f.name) + '</span></span>' +
+    '<span style="display:flex;align-items:center;gap:8px"><span class="sz">' + (f.bytes/1024).toFixed(0) + ' KB</span>' +
+    '<a href="#" onclick="FILES.splice(' + i + ',1);renderFiles();return false">✕</a></span></div>').join('');
 }
 
 // ---------- segments ----------
-$('engine').onclick = (e) => {
-  const b = e.target.closest('[data-v]'); if (!b) return;
-  ENGINE = b.dataset.v;
-  for (const x of $('engine').children) { x.classList.toggle('bg-teal-600', x === b); x.classList.toggle('text-white', x === b); x.classList.toggle('btn-ghost', x !== b); }
-  $('llmfields').style.display = ENGINE === 'local' ? 'none' : 'block';
-};
-$('style').onclick = (e) => {
-  const b = e.target.closest('[data-v]'); if (!b) return;
-  STYLE = b.dataset.v;
-  for (const x of $('style').children) { x.classList.toggle('bg-teal-600', x === b); x.classList.toggle('text-white', x === b); x.classList.toggle('btn-ghost', x !== b); }
-};
+function bindSeg(id, cb) {
+  $(id).onclick = (e) => {
+    const b = e.target.closest('[data-v]'); if (!b) return;
+    for (const x of $(id).children) x.classList.toggle('on', x === b);
+    cb(b.dataset.v);
+  };
+}
+bindSeg('engine', (v) => { ENGINE = v; $('llmfields').style.display = v === 'local' ? 'none' : 'block'; });
+bindSeg('style', (v) => { STYLE = v; });
 
 // ---------- generate ----------
 $('go').onclick = async () => {
@@ -221,15 +351,33 @@ async function poll() {
   $('go').disabled = false;
   const failed = (j.perChunk || []).filter(c => c.error).length;
   gmsg('完成：' + j.cards.length + ' 张卡片（' + j.done + '/' + j.total + ' 节' + (failed ? '，' + failed + ' 节失败' : '') + '）。点击卡片翻面；学习进度已就绪。');
-  // 学习入口高亮
+  $('exrow').classList.remove('hidden');
   $('study-deck').value = $('deck').value.trim();
-  $('study-home').querySelector('p').innerHTML = '<b class="text-teal-700">' + j.cards.length + ' 张新卡片已进入学习队列。</b>输入牌组名（已自动填入）并打开学习队列开始刷卡。';
 }
 
 function gmsg(m, isErr) {
   $('genmsg').innerHTML = m
-    ? '<div class="alert ' + (isErr ? 'alert-error' : 'alert-success') + ' text-sm py-2">' + esc(m) + '</div>'
-    : '<div class="skeleton h-6 w-full"></div>';
+    ? '<div class="msg ' + (isErr ? 'err' : 'ok') + '">' + esc(m) + '</div>'
+    : '<div class="skeleton"></div>';
+}
+
+// ---------- export ----------
+$('exrow').onclick = (e) => {
+  const fmt = e.target.closest('[data-fmt]')?.dataset.fmt;
+  if (fmt) download(fmt);
+};
+async function download(fmt) {
+  if (!JOB) return;
+  const r = await fetch('/api/export', { method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ jobId: JOB.id, format: fmt }) });
+  if (!r.ok) return;
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const exts = { apkg: 'apkg', tsv: 'txt', csv: 'csv', json: 'json', md: 'md' };
+  a.download = ($('deck').value.trim() || 'anki-forge') + '.' + (exts[fmt] || fmt);
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ---------- study mode ----------
@@ -242,35 +390,53 @@ $('study-open').onclick = async () => {
   renderStudy();
 };
 
+function resetFlip() {
+  const f = $('oflip');
+  f.style.transition = 'none';
+  f.classList.remove('flipped');
+  void f.offsetHeight;
+  f.style.transition = '';
+}
+const isFlipped = () => $('oflip')?.classList.contains('flipped');
+
 function renderStudy() {
   const remaining = STUDY.queue.length - STUDY.index;
   $('study-session').classList.remove('hidden');
-  $('study-home').classList.add('hidden');
   if (STUDY.index >= STUDY.queue.length) {
     $('study-session').innerHTML =
-      '<div class="text-center py-8 pop">' + I.brain +
-      '<div class="text-2xl font-bold mt-3">本轮完成</div>' +
-      '<div class="text-sm opacity-70 mt-1">复习 ' + STUDY.done + ' 张（其中标忘 ' + STUDY.again + ' 张）<br>到期卡片会再次出现在队列里。</div>' +
-      '<button class="btn btn-outline border-teal-600 text-teal-700 mt-4" onclick="location.reload()">刷新队列</button></div>';
+      '<div class="empty" style="animation:pop .25s both">' +
+      '<div style="font-size:17px;font-weight:650;color:var(--primary);margin-bottom:6px">本轮完成</div>' +
+      '<div>复习 ' + STUDY.done + ' 张（其中标忘 ' + STUDY.again + ' 张）<br>到期卡片会再次出现在队列里。</div>' +
+      '<button class="btn outline" style="margin:14px auto 0" onclick="location.reload()">刷新队列</button></div>';
     return;
   }
   const c = STUDY.queue[STUDY.index];
   $('study-session').innerHTML =
-    '<div class="flex justify-between text-xs opacity-70 mb-2"><span>第 ' + (STUDY.index + 1) + ' / ' + STUDY.queue.length + ' 张</span><span>剩余 ' + remaining + '</span></div>' +
-    '<div class="card bg-base-200/60 border border-base-300"><div class="card-body p-5 min-h-40 items-center justify-center text-center">' +
-    '<div class="text-[10px] font-bold tracking-widest text-teal-700 mb-1">' + (c.state === 0 ? '新卡片' : '复习') + '</div>' +
-    '<div id="card-front" class="text-lg font-semibold fade-in cursor-pointer" title="点击翻面" onclick="$(\'card-back\').classList.remove(\'hidden\');$(\'card-front\').classList.add(\'hidden\');$(\'gradebar\').classList.remove(\'hidden\')">' + esc(c.front) + '</div>' +
-    '<div id="card-back" class="hidden"><div class="text-base leading-relaxed">' + esc(c.back || '（无补充）') + '</div>' +
-    (c.source ? '<div class="text-xs opacity-60 mt-2">📍 ' + esc(c.source) + '</div>' : '') + '</div></div></div>' +
-    '<div id="gradebar" class="hidden grid grid-cols-4 gap-2 mt-3 pop">' +
-    '<button class="btn btn-sm flex-col h-auto py-2 border-error/40 text-error hover:bg-error hover:text-white" onclick="grade(1)">' + I.x + '<span class="text-[10px]">忘记</span></button>' +
-    '<button class="btn btn-sm flex-col h-auto py-2 border-warning/40 text-warning hover:bg-warning hover:text-white" onclick="grade(2)">' + I.minus + '<span class="text-[10px]">困难</span></button>' +
-    '<button class="btn btn-sm flex-col h-auto py-2 border-success/40 text-success hover:bg-success hover:text-white" onclick="grade(3)">' + I.check + '<span class="text-[10px]">良好</span></button>' +
-    '<button class="btn btn-sm flex-col h-auto py-2 border-info/40 text-info hover:bg-info hover:text-white" onclick="grade(4)">' + I.star + '<span class="text-[10px]">简单</span></button>' +
+    '<div class="study-meta"><span>第 ' + (STUDY.index + 1) + ' / ' + STUDY.queue.length + ' 张</span><span>剩余 ' + remaining + '</span></div>' +
+    '<div class="ocard" id="ocard"><div class="tint" id="otint"></div><div class="flip" id="oflip">' +
+    '<div class="face front"><span class="tag">' + (c.state === 0 ? '新卡片' : '复习') + '</span>' +
+    '<div class="q">' + esc(c.front) + '</div><div class="hint">点击卡片或按空格显示答案</div></div>' +
+    '<div class="face back"><div class="qkeep">' + esc(c.front) + '</div>' +
+    '<div class="a">' + esc(c.back || '（无补充）') + '</div>' +
+    (c.source ? '<div class="src">📍 ' + esc(c.source) + '</div>' : '') + '</div></div></div>' +
+    '<div class="grades" id="grades">' +
+    '<button class="g1" onclick="grade(1)">' + I.x + '忘记</button>' +
+    '<button class="g2" onclick="grade(2)">' + I.minus + '困难</button>' +
+    '<button class="g3" onclick="grade(3)">' + I.check + '良好</button>' +
+    '<button class="g4" onclick="grade(4)">' + I.star + '简单</button>' +
     '</div>' +
-    '<div class="hint text-xs opacity-60 mt-2">键盘党：空格翻面，1/2/3/4 评分。FSRS 会据此安排下次复习时间。</div>' +
+    '<div class="hint" style="font-size:11px;color:#a1a1aa;margin-top:8px;text-align:center">键盘党：空格翻面，1/2/3/4 评分 · ← 左滑标忘 · 右滑记住 →</div>' +
     '<div id="study-msg"></div>';
+  $('grades').style.display = 'none';
+  attachSwipe();
 }
+
+$('study-session').addEventListener('click', (e) => {
+  if (e.target.closest('#ocard') && !isFlipped()) {
+    $('oflip').classList.add('flipped');
+    $('grades').style.display = 'grid';
+  }
+});
 
 async function grade(rating) {
   const c = STUDY.queue[STUDY.index];
@@ -283,66 +449,66 @@ async function grade(rating) {
   } catch (e) { /* progress already advanced in UI; persistence retried next review */ }
 }
 
-function studyMsg(m) { $('study-meta').innerHTML = '<div class="alert alert-error text-sm py-2 mt-2">' + esc(m) + '</div>'; }
-
-// ---------- export (kept from before) ----------
-async function download(fmt) {
-  const r = await fetch('/api/export', { method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ jobId: JOB.id, format: fmt }) });
-  if (!r.ok) return;
-  const blob = await r.blob();
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = ($('deck').value.trim() || 'anki-forge') + (fmt === 'apkg' ? '.apkg' : '.txt');
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function studyMsg(m) { $('study-meta').innerHTML = '<div class="msg err">' + esc(m) + '</div>'; }
 
 // 学习快捷键：空格翻面、1-4 评分——刷卡效率的核心
 document.addEventListener('keydown', (e) => {
   const sess = document.getElementById('study-session');
   if (!sess || sess.classList.contains('hidden')) return;
-  const back = document.getElementById('card-back');
-  if (e.code === 'Space' && back && back.classList.contains('hidden')) {
-    e.preventDefault();
-    document.getElementById('card-front').classList.add('hidden');
-    back.classList.remove('hidden');
-    document.getElementById('gradebar').classList.remove('hidden');
+  if (!isFlipped()) {
+    if (e.code === 'Space') { e.preventDefault(); $('oflip').classList.add('flipped'); $('grades').style.display = 'grid'; }
     return;
   }
-  if (['1', '2', '3', '4'].includes(e.key) && back && !back.classList.contains('hidden')) {
-    e.preventDefault();
-    grade(Number(e.key));
-  }
+  if (['1', '2', '3', '4'].includes(e.key)) { e.preventDefault(); grade(Number(e.key)); }
 });
-// 学习卡滑动评分（与 demo 同款 pointer 手势）：答案未翻出时左右滑打分
-(function attachSwipe() {
+
+// 学习卡滑动评分（pointer 统一触摸/鼠标）：拖动红/绿染色确认方向
+function attachSwipe() {
   const card = $('ocard');
+  const tint = $('otint');
   let startX = null, dx = 0;
   card.addEventListener('pointerdown', (e) => {
-    if ($('oback-side').style.display === 'block') return;
+    if (isFlipped()) return;
     startX = e.clientX; dx = 0; card.style.transition = 'none';
   });
   card.addEventListener('pointermove', (e) => {
     if (startX === null) return;
     dx = e.clientX - startX;
     card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.04 + 'deg)';
+    tint.style.background = dx < 0
+      ? 'linear-gradient(90deg, rgba(220,38,38,.14), transparent 60%)'
+      : 'linear-gradient(-90deg, rgba(22,163,74,.14), transparent 60%)';
+    tint.style.opacity = Math.min(1, Math.abs(dx) / 90);
   });
-  card.addEventListener('pointerup', (e) => {
+  card.addEventListener('pointerup', () => {
     if (startX === null) return;
     card.style.transition = 'transform .25s';
+    tint.style.opacity = 0;
     if (Math.abs(dx) > 90) {
       const dir = dx > 0 ? 1 : -1;
-      card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 22 + 'deg)';
+      card.style.transform = 'translateX(' + dir * 420 + 'px) rotate(' + dir * 20 + 'deg)';
       setTimeout(() => { card.style.transform = ''; grade(dir > 0 ? 3 : 1); }, 160);
     } else {
       card.style.transform = '';
     }
     startX = null;
   });
+}
+
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// 交互层存活自检：id 丢失会让页面「看起来正常但全死」——加载后自查并挂出显眼错误条。
+(function selfCheck() {
+  const need = ['file', 'drop', 'deck', 'go', 'genmsg', 'study-deck', 'study-open', 'engine', 'style', 'provider', 'exrow'];
+  const missing = need.filter((id) => !document.getElementById(id));
+  const deadHandlers = [$('go').onclick, $('study-open').onclick, $('drop').onclick].some((h) => h === null);
+  if (missing.length || deadHandlers) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:sticky;top:0;z-index:99;background:#fef2f2;color:#dc2626;border-bottom:1px solid #fecaca;padding:10px 16px;font-size:13px;font-weight:600';
+    bar.textContent = '⚠ 界面初始化异常（' + (missing.length ? '缺少 ' + missing.join(', ') : '事件绑定失败') + '）——请刷新页面，若持续出现请到 GitHub 反馈';
+    document.body.prepend(bar);
+  }
 })();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
