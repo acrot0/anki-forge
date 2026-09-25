@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.17.0] — 2026-09-25
+
+### Added
+
+- **Swipe gestures in study mode** (demo page first): drag the card left to
+  mark 忘记, right to mark 记住 — pointer-following tilt and fade, snap-back
+  under threshold. Pointer events cover touch and mouse alike.
+- **Auto pronunciation** — English fronts are spoken via the free local
+  speechSynthesis API (zh/en detected per card).
+- **Session summary** — accuracy ring, counts and elapsed time when a round
+  ends, plus one-tap re-study of the cards you marked 忘记.
+
 ## [0.16.0] — 2026-09-25
 
 ### Added

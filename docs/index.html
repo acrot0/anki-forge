@@ -225,7 +225,7 @@ function openStudy() {
         reps: saved ? saved.reps : 0, fsrsCard: null,
       };
     }),
-    queue: [], index: 0, done: 0, again: 0,
+    queue: [], index: 0, done: 0, again: 0, againList: [], startedAt: Date.now(), muted: false,
   };
   // 到期优先：新卡与到期卡排前
   STUDY.queue = STUDY.cards
@@ -248,43 +248,106 @@ function renderStudyOverlay() {
     return d;
   })();
   if (STUDY.index >= STUDY.queue.length) {
-    const p = loadProgress();
-    const learned = Object.values(p).filter((x) => x.reps > 0).length;
-    el.innerHTML = '<div style="max-width:520px;margin:12vh auto;text-align:center;padding:0 20px">' +
-      '<div style="font-size:40px;color:var(--b1);font-weight:800">&#10003;</div>' +
-      '<h2 style="margin-top:12px">本轮完成</h2>' +
-      '<p style="color:var(--sub);margin-top:8px">复习 ' + STUDY.done + ' 张（标忘 ' + STUDY.again + ' 张）。' +
-      '进度已保存在本机——下次打开继续。<br>总学习卡片：' + learned + '</p>' +
-      '<button class="chip" style="margin-top:16px" onclick="document.getElementById(\'study-overlay\').remove()">返回</button></div>';
+    const secs = Math.round((Date.now() - STUDY.startedAt) / 1000);
+    const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 0;
+    el.innerHTML = '<div style="max-width:520px;margin:10vh auto;text-align:center;padding:0 20px">' +
+      '<svg width="120" height="120" viewBox="0 0 120 120" style="margin:0 auto">' +
+      '<circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="10"/>' +
+      '<circle cx="60" cy="60" r="52" fill="none" stroke="#818cf8" stroke-width="10" stroke-linecap="round" ' +
+      'stroke-dasharray="' + (2 * Math.PI * 52) + '" stroke-dashoffset="' + (2 * Math.PI * 52 * (1 - acc / 100)) + '" ' +
+      'transform="rotate(-90 60 60)" style="transition:stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)"/>' +
+      '<text x="60" y="68" text-anchor="middle" fill="currentColor" font-size="26" font-weight="800">' + acc + '%</text></svg>' +
+      '<h2 style="margin-top:16px">本轮完成</h2>' +
+      '<p style="color:var(--sub);margin-top:8px;font-size:14px">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 用时 ' + secs + ' 秒<br>标忘的卡会更快回来。</p>' +
+      '<div class="chips" style="justify-content:center;margin-top:16px">' +
+      (STUDY.againList.length ? '<button class="chip" onclick="reStudyAgain()">\u{1F501} 重刷标忘的 ' + STUDY.againList.length + ' 张</button>' : '') +
+      '<button class="chip" onclick="document.getElementById(\'study-overlay\').remove()">返回</button></div></div>';
     return;
   }
   const c = STUDY.queue[STUDY.index];
-  el.innerHTML = '<div style="max-width:560px;margin:8vh auto;padding:0 20px">' +
-    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:10px">' +
-    '<span>第 ' + (STUDY.index + 1) + ' / ' + STUDY.queue.length + ' 张</span>' +
-    '<span style="cursor:pointer" onclick="document.getElementById(\'study-overlay\').remove()">✕ 退出</span></div>' +
-    '<div id="study-card" class="card bg-base-100 border border-base-300" style="min-height:150px;display:flex;flex-direction:column;justify-content:center">' +
-    '<div style="text-align:center;padding:20px"><div style="font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:10px">' +
-    (c.state === 0 ? '新卡片' : '复习') + '</div>' +
-    '<div id="s-front" style="font-size:18px;font-weight:650;cursor:pointer" onclick="this.parentElement.querySelector(\'#s-back\').style.display=\'block\';this.style.display=\'none\'">' + esc(c.front) + '</div>' +
-    '<div id="s-back" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);text-align:left;font-size:15px;line-height:1.6">' + esc(c.back) + '</div>' +
-    '</div></div>' +
-    '<div id="s-grades" style="display:none" class="chips">' +
-    '<button class="chip" onclick="sgrade(1)" style="border-color:rgba(248,113,113,.4)">重来</button>' +
-    '<button class="chip" onclick="sgrade(2)" style="border-color:rgba(251,191,36,.4)">困难</button>' +
-    '<button class="chip" onclick="sgrade(3)" style="border-color:rgba(52,211,153,.4)">良好</button>' +
-    '<button class="chip" onclick="sgrade(4)" style="border-color:rgba(129,140,248,.4)">简单</button>' +
+  const progressPct = Math.round(STUDY.index / STUDY.queue.length * 100);
+  const speakable = /[a-zA-Z]{3,}/.test(c.front);
+  el.innerHTML = '<div style="max-width:560px;margin:6vh auto;padding:0 20px">' +
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">' +
+    '<div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden">' +
+    '<div style="height:100%;width:' + progressPct + '%;background:linear-gradient(90deg,#818cf8,#c084fc);border-radius:99px;transition:width .3s"></div></div>' +
+    '<span style="font-size:12px;color:var(--sub);white-space:nowrap">' + (STUDY.index + 1) + '/' + STUDY.queue.length + '</span>' +
+    '<span style="font-size:12px;color:var(--sub);cursor:pointer" onclick="document.getElementById(\'study-overlay\').remove()">\u2715</span></div>' +
+    '<div id="swipe-card" class="swipe-card card bg-base-100" style="min-height:230px;touch-action:none;user-select:none">' +
+    '<div class="face-a" style="padding:28px 22px;display:flex;flex-direction:column;justify-content:center;min-height:230px">' +
+    '<div style="text-align:center;font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:14px">' +
+    (c.state === 0 ? '新卡片' : '复习') +
+    (speakable ? ' <span id="tts-btn" style="cursor:pointer;opacity:.6" onclick="event.stopPropagation();speak(\'' + c.front.replace(/[^a-zA-Z0-9' -]/g, '') + '\')">\u{1F50A}</span>' : '') + '</div>' +
+    '<div style="text-align:center;font-size:clamp(19px,4.5vw,26px);font-weight:700;line-height:1.4">' + esc(c.front) + '</div>' +
+    '<div style="text-align:center;margin-top:22px;font-size:12px;color:var(--sub)">点击翻面 · 或左右滑动评分</div></div>' +
+    '<div class="face-b" style="display:none;padding:28px 22px;flex-direction:column;justify-content:center;min-height:230px">' +
+    '<div style="text-align:center;font-size:11px;letter-spacing:2px;color:var(--b1);font-weight:800;margin-bottom:14px">答案</div>' +
+    '<div style="text-align:center;font-size:clamp(17px,3.8vw,22px);font-weight:650;line-height:1.55">' + esc(c.back) + '</div>' +
+    (c.source ? '<div style="text-align:center;margin-top:16px;font-size:12px;color:var(--sub)">\u{1F4CD} ' + esc(c.source) + '</div>' : '') + '</div>' +
     '</div>' +
-    '<div class="hint" style="margin-top:10px">先回想，再显示答案评分。FSRS 决定下次出现时间。</div></div>';
-  const gbtns = el.querySelector('#s-grades');
-  el.querySelector('#s-front').addEventListener('click', () => {
-    el.querySelector('#s-back').style.display = 'block';
-    gbtns.style.display = 'flex';
-  });
+    '<div style="text-align:center;margin-top:14px;font-size:13px;color:var(--ink);opacity:.85">' +
+    '\u2190 左滑标忘 · 右滑记住 \u2192<br><span style="font-size:11px;opacity:.7">或点翻面后用按钮评分</span></div>' +
+    '<div class="chips" style="justify-content:center;margin-top:12px">' +
+    '<button class="chip" onclick="sflip()">翻面</button>' +
+    '<button class="chip" onclick="sgrade(1)" style="border-color:rgba(248,113,113,.4)">重来</button>' +
+    '<button class="chip" onclick="sgrade(3)" style="border-color:rgba(52,211,153,.4)">记住</button>' +
+    (speakable ? '<button class="chip" onclick="speak(\'' + c.front.replace(/[^a-zA-Z0-9' -]/g, '') + '\')">\u{1F50A}</button>' : '') +
+    '</div>';
+  attachSwipe(el.querySelector('#swipe-card'), c);
+  if (speakable && !STUDY.muted) speak(c.front);
+}
+function attachSwipe(cardEl, c) {
+  let startX = null, dx = 0;
+  const start = (x) => { startX = x; cardEl.style.transition = 'none'; };
+  const move = (x) => {
+    if (startX === null) return;
+    dx = x - startX;
+    cardEl.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.06 + 'deg)';
+    cardEl.style.opacity = String(1 - Math.min(Math.abs(dx) / 400, 0.5));
+  };
+  const end = () => {
+    if (startX === null) return;
+    cardEl.style.transition = 'transform .25s, opacity .25s';
+    if (Math.abs(dx) > 90) {
+      const dir = dx > 0 ? 1 : -1;
+      cardEl.style.transform = 'translateX(' + dir * 500 + 'px) rotate(' + dir * 30 + 'deg)';
+      cardEl.style.opacity = '0';
+      sgrade(dir > 0 ? 3 : 1);
+    } else {
+      cardEl.style.transform = ''; cardEl.style.opacity = '1';
+    }
+    startX = null;
+  };
+  cardEl.onpointerdown = (e) => { start(e.clientX); cardEl.setPointerCapture(e.pointerId); };
+  cardEl.onpointermove = (e) => move(e.clientX);
+  cardEl.onpointerup = end;
+  cardEl.onpointercancel = end;
+}
+function sflip() {
+  const card = document.getElementById('swipe-card');
+  const a = card.querySelector('.face-a'), b = card.querySelector('.face-b');
+  const showingB = b.style.display !== 'none';
+  a.style.display = showingB ? 'none' : 'flex';
+  b.style.display = showingB ? 'flex' : 'none';
+}
+function speak(text) {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = /[\u4e00-\u9fa5]/.test(text) ? 'zh-CN' : 'en-US';
+    u.rate = 0.92;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch {}
+}
+function reStudyAgain() {
+  const againKeys = STUDY.againList.map((x) => x.key);
+  STUDY.cards.forEach((c) => { if (againKeys.includes(c.key)) c.due = 0; });
+  STUDY.queue = STUDY.cards.filter((c) => againKeys.includes(c.key));
+  STUDY.index = 0; STUDY.done = 0; STUDY.again = 0; STUDY.againList = [];
+  renderStudyOverlay();
 }
 function sgrade(rating) {
   const c = STUDY.queue[STUDY.index];
-  if (rating === 1) STUDY.again++;
+  if (rating === 1) { STUDY.again++; STUDY.againList.push(c); }
   STUDY.done++; STUDY.index++;
   const progress = loadProgress();
   const entry = progress[c.key] || { state: 0, due: 0, reps: 0 };
@@ -306,6 +369,7 @@ function sgrade(rating) {
   saveProgress(progress);
   renderStudyOverlay();
 }
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
