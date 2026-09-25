@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 翻开的卡组：三张层叠卡片 -->
+    <path
+        android:pathData="M40,38 L68,38 A3,3 0 0 1 71,41 L71,70 A3,3 0 0 1 68,73 L40,73 A3,3 0 0 1 37,70 L37,41 A3,3 0 0 1 40,38 Z"
+        android:strokeColor="#a5b4fc"
+        android:strokeWidth="3.5"
+        android:fillColor="#00000000"/>
+    <path
+        android:pathData="M48,44 h14 M48,52 h10"
+        android:strokeColor="#c084fc"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"/>
+    <path
+        android:pathData="M44,84 L76,84"
+        android:strokeColor="#f0abfc"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"/>
+</vector>
