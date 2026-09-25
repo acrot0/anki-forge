@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.27.0] — 2026-09-25
+
+### Added
+
+- **Paste-to-import in the full UI** — 「＋ 或粘贴文本」turns pasted lecture
+  text into a virtual .txt input; the local (key-free) engine works end to
+  end without touching the filesystem.
+- **Searchable card list in the full UI** — generated cards render as an
+  expandable, searchable list (parity with the demo page), served straight
+  from the job payload.
+- **Study queue stats** — opening a queue shows due / new / learning counts
+  as stat pills above the card.
+- **Preference memory** — deck name, engine, style, provider, model, limits
+  and the study deck persist in localStorage. The API key is still never
+  stored.
+
+### Fixed
+
+- **Generated cards never reached the study queue in the full UI**: the
+  page never called `/api/study/start`, so `getQueue` always read an empty
+  deck and the study panel greeted every deck with "本轮完成 · 复习 0 张".
+  Generation now seeds the study store automatically; an empty queue shows
+  guidance instead of a fake completion box.
+
 ## [0.26.0] — 2026-09-25
 
 ### Fixed
