@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-09-25
+
+### Changed
+
+- **Texture-first redesign of both surfaces** (web demo + the full UI):
+  tinted near-black canvas (not pure black) with layered radial glows and
+  SVG grain, gradient-border cards via the border-box/mask-composite
+  technique, inner top highlights, indigo→fuchsia accent kept restrained.
+- **Motion system**: expo-out entrances with stagger, spring flip curves,
+  button sheen sweep, flowing progress shimmer, floating empty state — all
+  transform/opacity (compositor-only) with a prefers-reduced-motion opt-out.
+- **Five subject examples** in the demo (考研英语 / 生物 / 近代史 / 计算机网络 /
+  医学免疫), one chip each.
+- Cards themselves reworked: gradient-border faces, inner highlight, glow
+  hover, spring flip — front Q with tags, back A with source section.
+
 ## [0.12.0] — 2026-09-25
 
 ### Fixed
