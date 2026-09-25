@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] — 2026-09-25
+
+### Added
+
+- **Web demo page** (GitHub Pages): paste text, generate with the local
+  engine in the browser, export Anki-importable TSV — zero install, works on
+  phones. Ships with a 30-word Kaoyan English sample.
+- **Vocab notetype** (`--style vocab`): Word/Phonetic/Definition/Example
+  fields with a dedicated word-card template — for vocabulary lists.
+- **Demo deck**: 30 high-frequency Kaoyan English words as a ready .apkg on
+  the Release page (importing it is, of course, your call).
+- **docs/SYNC.md**: the long-game design for data sync (files as sync units,
+  no proprietary cloud), recorded before it is needed.
+
 ## [0.10.0] — 2026-09-25
 
 ### Added

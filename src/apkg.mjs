@@ -125,6 +125,37 @@ hr#answer { border: 0; border-top: 2px dashed #c7d2fe; margin: 18px 30%; }
 .nightMode .cloze { color: #a5b4fc; }`;
 
 function modelJson(mid, name, style, now) {
+  if (style === 'vocab') {
+    return {
+      [mid]: {
+        id: Number(mid),
+        name,
+        type: 0,
+        mod: now,
+        usn: -1,
+        sortf: 0,
+        did: null,
+        css: CARD_CSS + `
+.word { font-size: 30px; font-weight: 700; letter-spacing: .5px; }
+.phonetic { color: #6b7280; font-size: 16px; margin-top: 4px; }
+.example { margin-top: 12px; font-style: italic; color: #6b7280; font-size: 16px; }
+.nightMode .word { color: #a5b4fc; }`,
+        tmpls: [{
+          name: 'Card 1', ord: 0,
+          qfmt: '<div class="word">{{Word}}</div><div class="phonetic">{{Phonetic}}</div>',
+          afmt: '<div class="word">{{Word}}</div><div class="phonetic">{{Phonetic}}</div><hr id="answer"><div class="a">{{Definition}}</div><div class="example">{{Example}}</div><div class="tags">{{Tags}}</div>',
+          bqfmt: '', bafmt: '', did: null,
+        }],
+        flds: ['Word', 'Phonetic', 'Definition', 'Example'].map((f, ord) => ({
+          name: f, ord, sticky: false, rtl: false, font: 'Arial', size: 20, media: [],
+        })),
+        tags: [],
+        latexPre: '\\documentclass[12pt]{article}\n\\special{papersize=3in,5in}\n\\usepackage[utf8]{inputenc}\n\\usepackage{amssymb,amsmath}\n\\pagestyle{empty}\n\\setlength{\\parindent}{0in}\n\\begin{document}\n',
+        latexPost: '\\end{document}',
+        req: [[0, 'any', [0]]],
+      },
+    };
+  }
   const fields = style === 'cloze'
     ? ['Text', 'Extra']
     : ['Front', 'Back'];
@@ -189,7 +220,8 @@ export async function writeApkgBytes(cards, { deckName, style = 'basic' } = {}) 
   const mid = nowMs;
   const modelId = String(mid);
   const did = nowMs + 1;
-  const model = modelJson(modelId, style === 'cloze' ? 'anki-forge Cloze' : 'anki-forge Basic', style, now);
+  const modelName = style === 'cloze' ? 'anki-forge Cloze' : style === 'vocab' ? 'anki-forge Vocab' : 'anki-forge Basic';
+  const model = modelJson(modelId, modelName, style, now);
   const decks = {
     ...deckJson(1, 'Default', now),
     ...deckJson(did, deckName, now),
@@ -210,17 +242,23 @@ export async function writeApkgBytes(cards, { deckName, style = 'basic' } = {}) 
 
   const insNote = db.prepare('INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (?, ?, ?, ?, -1, ?, ?, ?, ?, 0, \'\')');
   const insCard = db.prepare('INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?, ?, ?, 0, ?, -1, 0, 0, ?, 0, 0, 0, 0, 0, 0, 0, 0, \'\')');
+  // Vocab cards carry their own field shape; basic/cloze use front/back.
+  const fldsOf = style === 'vocab'
+    ? (c) => [c.word ?? '', c.phonetic ?? '', c.definition ?? c.back ?? '', c.example ?? '']
+    : style === 'cloze'
+      ? (c) => [c.front, c.back ?? '']
+      : (c) => [c.front, c.back];
+  const sfldOf = style === 'vocab' ? (c) => c.word ?? '' : (c) => c.front;
   // One transaction for the whole batch: a thousand-card deck otherwise pays
   // a fsync per row, which is the difference between seconds and minutes.
   db.exec('BEGIN');
   try {
     cards.forEach((c, i) => {
       const nid = nowMs + i;
-      const back = style === 'cloze' ? (c.back || '') : c.back;
-      const flds = `${c.front}\u001f${back}`;
+      const flds = fldsOf(c).join('\u001f');
       const tags = [...(c.tags ?? [])].join(' ');
-      const csum = Number.parseInt(createHash('sha1').update(c.front).digest('hex').slice(0, 8), 16);
-      insNote.run(nid, newGuid(), mid, now, tags, flds, c.front, csum);
+      const csum = Number.parseInt(createHash('sha1').update(sfldOf(c)).digest('hex').slice(0, 8), 16);
+      insNote.run(nid, newGuid(), mid, now, tags, flds, sfldOf(c), csum);
       // due = i+1: new-card position in insertion order, mirroring what Anki
       // does for fresh imports.
       insCard.run(nowMs + 1_000_000 + i, nid, did, now, i + 1);

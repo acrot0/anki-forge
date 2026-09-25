@@ -73,6 +73,21 @@ describe('apkg export', () => {
     }
   });
 
+  test('vocab style writes a four-field word notetype', async () => {
+    const bytes = await writeApkgBytes([{ word: 'abandon', phonetic: '/əˈbændən/', definition: 'v. 放弃', example: 'Abandon ship.', tags: [] }], { deckName: 'D', style: 'vocab' });
+    const db = await openCollection(bytes);
+    try {
+      const model = Object.values(JSON.parse(db.prepare('SELECT models FROM col').get().models))[0];
+      assert.equal(model.name, 'anki-forge Vocab');
+      assert.deepEqual(model.flds.map((f) => f.name), ['Word', 'Phonetic', 'Definition', 'Example']);
+      const note = db.prepare('SELECT flds, sfld FROM notes LIMIT 1').get();
+      assert.equal(note.flds.split('\u001f')[0], 'abandon');
+      assert.equal(note.sfld, 'abandon');
+    } finally {
+      db.close();
+    }
+  });
+
   test('note ids are unique and card due preserves insertion order', async () => {
     const many = Array.from({ length: 30 }, (_, i) => ({ front: `q${i}`, back: `a${i}`, tags: [] }));
     const bytes = await writeApkgBytes(many, { deckName: 'D', style: 'basic' });

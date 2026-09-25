@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>anki-forge 体验版 — 讲义变卡组</title>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
+<style>
+  :root { --b1:#4f46e5; --b2:#7c3aed; --bg:#f6f7fb; --card:#fff; --ink:#1e2233; --sub:#6b7280; --line:#e5e7eb; --chip:#eef2ff; --chip-ink:#3730a3; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1117; --card:#171a23; --ink:#e7e9f0; --sub:#9aa1b2; --line:#262b38; --chip:#1e2140; --chip-ink:#a5b4fc; } }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:system-ui,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--ink); min-height:100vh;
+         background-image:radial-gradient(circle at 15% -10%,#e0e7ff 0%,transparent 45%),radial-gradient(circle at 90% -10%,#ede9fe 0%,transparent 40%); }
+  .wrap { max-width:860px; margin:0 auto; padding:0 16px 60px; }
+  .hero { margin:18px 0 18px; padding:22px 24px; border-radius:18px; color:#fff; background:linear-gradient(120deg,var(--b1),var(--b2) 60%,#a855f7); box-shadow:0 10px 30px rgba(79,70,229,.25); }
+  .hero h1 { font-size:21px; } .hero p { margin-top:6px; font-size:13px; opacity:.92; }
+  .badge { display:inline-block; font-size:12px; background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); border-radius:99px; padding:3px 10px; margin:10px 6px 0 0; }
+  .panel { background:var(--card); border-radius:14px; box-shadow:0 1px 3px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.06); padding:18px; margin-bottom:16px; }
+  h2 { font-size:13px; color:var(--sub); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+  textarea { width:100%; min-height:160px; border:1.5px solid var(--line); border-radius:10px; padding:12px; font-size:14px; font-family:inherit; background:var(--bg); color:var(--ink); outline:none; resize:vertical; }
+  textarea:focus { border-color:var(--b1); }
+  .btn { border:0; cursor:pointer; background:linear-gradient(135deg,var(--b1),var(--b2)); color:#fff; font-size:14.5px; font-weight:600; padding:11px 20px; border-radius:10px; width:100%; margin-top:12px; }
+  .btn.ghost { background:var(--card); color:var(--ink); border:1.5px solid var(--line); width:auto; font-size:13px; padding:8px 14px; margin:0; }
+  .btn:disabled { opacity:.5; }
+  .demo-btns { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  @media (max-width:640px) { .cards { grid-template-columns:1fr; } }
+  .card3 { border:1px solid var(--line); border-radius:11px; padding:11px 13px; background:var(--card); }
+  .card3 .q { font-weight:600; font-size:13.5px; } .card3 .a { margin-top:6px; padding-top:6px; border-top:1px dashed var(--line); font-size:13px; color:var(--sub); }
+  .stat { margin-top:10px; font-size:13px; color:var(--ok); }
+  .note { font-size:12px; color:var(--sub); margin-top:8px; line-height:1.6; }
+  a { color:var(--b1); }
+  footer { text-align:center; font-size:12px; color:var(--sub); margin-top:20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>⚒ anki-forge 网页体验版</h1>
+    <p>粘贴一段讲义文本，本地规则引擎即刻出卡——全程在你浏览器里完成，文本不上传任何服务器，无需注册无需 Key。</p>
+    <span class="badge">离线规则引擎</span><span class="badge">导出 Anki 可导入的 TSV</span><span class="badge">体验版 · PC 完整版见 GitHub</span>
+  </div>
+
+  <div class="panel">
+    <h2>1 · 输入材料</h2>
+    <textarea id="text" placeholder="粘贴讲义/课本片段（支持中文定义句、枚举句、因果句、数字事实）。例如：线粒体是细胞进行有氧呼吸的主要场所。"></textarea>
+    <div class="demo-btns">
+      <button class="btn ghost" id="demo-words">📚 加载示例：考研英语高频词 30 个</button>
+      <button class="btn ghost" id="demo-bio">🧬 加载示例：生物学短文</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>2 · 生成本地引擎</h2>
+    <label style="font-size:13px;font-weight:600">每句最多出卡数 / 全局上限</label>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <input id="maxcards" type="number" value="10" min="1" max="50" style="width:90px;border:1.5px solid var(--line);border-radius:9px;padding:8px;background:var(--bg);color:var(--ink)">
+      <input id="maxtotal" type="number" value="60" min="1" style="width:90px;border:1.5px solid var(--line);border-radius:9px;padding:8px;background:var(--bg);color:var(--ink)">
+    </div>
+    <button class="btn" id="go">⚡ 生成卡片</button>
+    <div id="out"></div>
+    <div id="cards" class="cards"></div>
+    <div class="note" id="howto" style="display:none">
+      <b>导入 Anki / AnkiDroid：</b>下载 TSV → Anki「文件 → 导入」→ 字段分隔符选 Tab → 首行不是标题。正面=问题，背面=答案。<br>
+      <b>想要 .apkg 单文件（含样式模板）？</b>用 PC 版：<code>anki-forge import 材料.md --deck 卡组名</code> 或图形界面 <code>anki-forge ui</code>（见 GitHub）。
+    </div>
+  </div>
+
+  <footer>anki-forge 开源（MIT）· <a href="https://github.com/acrot0/anki-forge">GitHub</a> · <a href="https://github.com/acrot0/anki-forge/releases">下载 PC 版（exe 内嵌图形界面）</a> · 体验版仅文本输入；PDF/PPT/Word/Excel 请用 PC 版</footer>
+</div>
+<script>
+// ---- 考研英语示例数据（30 高频词）----
+const DEMO_WORDS = [
+  ['abandon','v. 放弃，抛弃','He was forced to abandon the plan.'],
+  ['abundant','adj. 丰富的，充裕的','The region has abundant natural resources.'],
+  ['accelerate','v. 加速，促进','Global warming has accelerated the melting of glaciers.'],
+  ['accommodate','v. 容纳；使适应','The hall can accommodate 500 people.'],
+  ['accumulate','v. 积累，积聚','Fat tends to accumulate around the waist.'],
+  ['acquire','v. 获得，习得','Children acquire language remarkably fast.'],
+  ['advocate','v./n. 提倡（者）','She advocates a balanced diet for children.'],
+  ['alleviate','v. 减轻，缓解','The medicine alleviated his pain quickly.'],
+  ['ambiguous','adj. 模棱两可的','His answer was deliberately ambiguous.'],
+  ['anticipate','v. 预期，预料','We anticipate strong opposition to the plan.'],
+  ['arbitrary','adj. 任意的，武断的','The rule seems completely arbitrary.'],
+  ['authentic','adj. 真实的，正宗的','The museum holds an authentic Ming vase.'],
+  ['autonomous','adj. 自主的，自治的','The region became fully autonomous in education.'],
+  ['bureaucracy','n. 官僚机构','Excessive bureaucracy slows everything down.'],
+  ['coincide','v. 巧合；一致','My views coincide with hers on education.'],
+  ['compensate','v. 补偿，弥补','Nothing can compensate for the loss of time.'],
+  ['comprehensive','adj. 全面的','The report gives a comprehensive analysis.'],
+  ['condemn','v. 谴责','World leaders condemned the attack.'],
+  ['confine','v. 限制','Please confine your remarks to the topic.'],
+  ['conform','v. 符合，遵从','All products must conform to safety standards.'],
+  ['contemplate','v. 沉思，考虑','She contemplated changing her career.'],
+  ['contradict','v. 反驳，矛盾','The two reports contradict each other.'],
+  ['convey','v. 传达','Words can hardly convey how grateful I am.'],
+  ['crucial','adj. 至关重要的','Reading plays a crucial role in learning.'],
+  ['deteriorate','v. 恶化','His health deteriorated rapidly last winter.'],
+  ['discriminate','v. 歧视；区分','The law forbids discriminating against the disabled.'],
+  ['eliminate','v. 消除，淘汰','We aim to eliminate waste in production.'],
+  ['facilitate','v. 促进','The new system facilitates online learning.'],
+  ['fundamental','adj. 基本的','Honesty is a fundamental value.'],
+  ['inevitable','adj. 不可避免的','Change is the inevitable result of progress.'],
+];
+
+const DEMO_BIO = `线粒体是细胞进行有氧呼吸的主要场所，被称为细胞的动力车间。叶绿体是绿色植物进行光合作用的场所。
+细胞器包括线粒体、内质网、核糖体、高尔基体和溶酶体。
+糖类是生物体的主要能源物质。DNA 携带着生物体的遗传信息。
+蛋白质是生命活动的主要承担者，其基本组成单位是氨基酸。
+1937 年是全面抗战爆发的时间。过度疲劳会导致免疫力下降。`;
+
+// ---- 本地规则引擎（与 src/local-engine.mjs 同规则）----
+function sentences(text) {
+  return text.split(/(?<=[。！？!?；;\n])/).map(s => s.replace(/^[\s•·\-*\d]+[.、)\]]*\s*/, '').trim())
+    .filter(s => s.length >= 7);
+}
+function rules() {
+  return [
+    { re: /^(.{2,40}?)(?:是指|指的是|就是|是|称为|叫做)(.{4,160})[。．；;]?$/, make: m => ({ front: '什么是' + m[1].trim() + '？', back: m[2].trim() }) },
+    { re: /^(.{2,30}?)(?:包括|分为|包含|有以下|可分成)(.{4,180})[。；;]?$/, make: m => ({ front: m[1].trim() + '包括哪些内容？', back: m[2].trim() }) },
+    { re: /^(.{3,50}?)(?:导致|引起|造成|使得|促使)(.{4,140})[。．；;]?$/, make: m => ({ front: m[1].trim() + '会导致什么？', back: m[2].trim() }) },
+    { re: /^(.{2,36}?)(?:是|为|达到|约|大约|共)(\s*(?:公元)?\d[\d,.]*\s*(?:年|个|%|％|倍|千米|公里|米|克|千克|万吨|亿))[^。；]{0,60}[。；;]?$/, make: m => ({ front: m[1].trim() + '是多少？', back: m[2].trim() }) },
+  ];
+}
+function extractCards(text, maxCards) {
+  const out = []; const seen = new Set();
+  for (const s of sentences(text)) {
+    if (out.length >= maxCards) break;
+    for (const r of rules()) {
+      const m = s.match(r.re);
+      if (!m) continue;
+      let c; try { c = r.make(m); } catch (e) { continue; }
+      if (!c.front || !c.back || c.front.length < 4 || c.front.length > 80 || c.back.length < 3 || c.back.length > 220) continue;
+      const key = c.front.toLowerCase().replace(/\s+/g, ' ');
+      if (seen.has(key)) continue;
+      seen.add(key); out.push(c); break;
+    }
+  }
+  return out;
+}
+
+// ---- demo loaders ----
+$('demo-words').onclick = () => {
+  $('text').value = DEMO_WORDS.map(w => w[0] + ' ' + w[1] + '。例：' + w[2]).join('\n');
+  $('text').dataset.mode = 'vocab';
+};
+$('demo-bio').onclick = () => { $('text').value = DEMO_BIO; delete $('text').dataset.mode; };
+
+// ---- generate ----
+$('go').onclick = () => {
+  const text = $('text').value.trim();
+  if (!text) { outMsg('先粘贴或加载一段材料', true); return; }
+  let cards;
+  if ($('text').dataset.mode === 'vocab') {
+    // 词表模式：每行「word 释义。例：例句」
+    cards = text.split(/\n+/).map(l => l.trim()).filter(Boolean).slice(0, +$('maxtotal').value || 60).map(l => {
+      const m = l.match(/^(\S+)\s+(.+?)(?:。?\s*例：(.+))?\.?$/);
+      return m ? { front: m[1], back: (m[2] || '') + (m[3] ? '\n' + m[3] : '') } : null;
+    }).filter(Boolean);
+  } else {
+    cards = extractCards(text, +$('maxtotal').value || 60);
+  }
+  if (cards.length === 0) { outMsg('没能从材料里抽出卡片——试试包含「X 是 Y」「X 包括…」句式的段落', true); return; }
+  render(cards);
+};
+
+function render(cards) {
+  const cap = +$('maxcards').value || 10;
+  $('out').innerHTML = '<div class="stat">✨ 抽出 ' + cards.length + ' 张卡片（每句上限 ' + cap + ' 已按行应用）</div>' +
+    '<div class="demo-btns" style="margin-top:10px">' +
+    '<button class="btn ghost" id="dltsv">⬇ 下载 TSV（Anki 可导入）</button>' +
+    '<button class="btn ghost" id="copy">复制到剪贴板</button></div>' +
+    '<div class="note" id="howto" style="display:block"><b>导入 Anki：</b>文件 → 导入 → 选 TSV → 字段分隔符 Tab。<br><b>想要 .apkg 单文件？</b>用 PC 版（见下方链接），样式模板都打包好。</div>';
+  $('cards').innerHTML = cards.slice(0, 40).map(c =>
+    '<div class="card3"><div class="q">' + esc(c.front) + '</div><div class="a">' + esc(c.back).replace(/\n/g, '<br>') + '</div></div>').join('');
+  const tsv = cards.map(c => c.front + '\t' + c.back.replace(/\n/g, ' ')).join('\n');
+  $('dltsv').onclick = () => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([tsv], { type: 'text/plain' }));
+    a.download = 'anki-forge-demo.txt'; a.click();
+  };
+  $('copy').onclick = () => { navigator.clipboard.writeText(tsv); $('copy').textContent = '✓ 已复制'; };
+}
+
+function outMsg(m, isErr) {
+  $('out').innerHTML = '<div class="stat" style="color:' + (isErr ? '#dc2626' : '#059669') + '">' + esc(m) + '</div>';
+}
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+</script>
+</body>
+</html>
