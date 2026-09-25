@@ -11,7 +11,8 @@
  * 2 = usage or environment error.
  */
 import readline from 'node:readline/promises';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, readdir, stat } from 'node:fs/promises';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { checkConnection, ensureDeck, addCards } from './anki.mjs';
 import { generateCards } from './generate.mjs';
@@ -20,6 +21,43 @@ import { writeApkgBytes } from './apkg.mjs';
 import { parseFile } from './parse.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
 import { startUi } from './webui.mjs';
+
+const SUPPORTED_EXTS = ['.pdf', '.pptx', '.docx', '.xlsx', '.md', '.markdown', '.txt', ''];
+const SKIP_DIRS = new Set(['node_modules', '.git', '.venv', '__pycache__']);
+
+/**
+ * Expand directories into supported files (recursive). Students point at a
+ * whole semester folder; hidden dirs and node_modules are skipped so an
+ * accidental project root does not turn into a thousand-file import.
+ */
+export async function expandInputs(files) {
+  const out = [];
+  for (const f of files) {
+    const st = await stat(f).catch(() => null);
+    if (!st) {
+      out.push(f); // let parseFile produce the ENOENT error with the real path
+      continue;
+    }
+    if (!st.isDirectory()) {
+      out.push(f);
+      continue;
+    }
+    const found = [];
+    async function walk(dir) {
+      for (const entry of await readdir(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) {
+          if (!SKIP_DIRS.has(entry.name) && !entry.name.startsWith('.')) await walk(path.join(dir, entry.name));
+          continue;
+        }
+        if (SUPPORTED_EXTS.includes(path.extname(entry.name).toLowerCase())) found.push(path.join(dir, entry.name));
+      }
+    }
+    await walk(f);
+    if (found.length === 0) throw new Error(`"${f}" contains no importable files (.pdf/.pptx/.docx/.xlsx/.md/.txt)`);
+    out.push(...found.sort());
+  }
+  return out;
+}
 
 export const DEFAULT_ANKI_URL = 'http://127.0.0.1:8765';
 
@@ -36,6 +74,7 @@ export function parseArgs(argv, env = process.env) {
     style: null,
     exportFile: null,
     noCache: false,
+    maxTotal: null,
     baseUrl: env.OPENAI_BASE_URL ?? null,
     model: env.OPENAI_MODEL ?? null,
     apiKey: env.OPENAI_API_KEY ?? null,
@@ -57,6 +96,7 @@ export function parseArgs(argv, env = process.env) {
     else if (a === '--export') out.exportFile = val();
     else if (a === '--no-cache') out.noCache = true;
     else if (a === '--concurrency') out.concurrency = Number(val());
+    else if (a === '--max-total') out.maxTotal = Number(val());
     else if (a === '--base-url') out.baseUrl = val();
     else if (a === '--model') out.model = val();
     else if (a === '--api-key') out.apiKey = val();
@@ -91,6 +131,7 @@ export function toArgv(args) {
   if (args.exportFile) argv.push('--export', args.exportFile);
   if (args.noCache) argv.push('--no-cache');
   if (args.concurrency) argv.push('--concurrency', String(args.concurrency));
+  if (args.maxTotal) argv.push('--max-total', String(args.maxTotal));
   if (args.ankiUrl !== DEFAULT_ANKI_URL) argv.push('--anki-url', args.ankiUrl);
   return argv;
 }
@@ -161,8 +202,11 @@ async function runImport(args) {
   args.style = args.style ?? 'basic';
   applyProvider(args);
 
+  const inputs = await expandInputs(args.files);
+  if (inputs.length !== args.files.length) console.error(`  expanded to ${inputs.length} files from ${args.files.length} inputs`);
+
   const allChunks = [];
-  for (const file of args.files) {
+  for (const file of inputs) {
     const { chunks, kind } = await parseFile(file);
     console.error(`  ${file}: ${chunks.length} chunks (${kind})`);
     allChunks.push(...chunks.map((c) => ({ ...c, file })));
@@ -183,7 +227,11 @@ async function runImport(args) {
         if (done === total) process.stderr.write('\n');
       }
     : null;
-  const { cards, perChunk } = await generateCards(allChunks, args, { cache, onProgress });
+  let { cards, perChunk } = await generateCards(allChunks, args, { cache, onProgress });
+  if (args.maxTotal && cards.length > args.maxTotal) {
+    console.error(`  capped to ${args.maxTotal} cards (--max-total; was ${cards.length})`);
+    cards = cards.slice(0, args.maxTotal);
+  }
   if (cache) await cache.save();
   summarize(perChunk, 'generation');
   const cachedCount = perChunk.filter((c) => c.cached).length;
@@ -255,6 +303,8 @@ Import options:
                            deck file) or any other name → Anki-importable TSV
   --no-cache               re-call the LLM even if this exact section is cached
   --max-cards-per-chunk N  cap per section (default 10)
+  --max-total N            cap the whole run (protects against a folder gone wild)
+  --concurrency N          chunks generated in parallel (default 4)
   --language LANG          force card language, default follows the material
   --tags a,b               extra tags on every card
 Generation (any OpenAI-compatible endpoint):

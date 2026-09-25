@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-09-25
+
+### Added
+
+- **Folder import** — `anki-forge import ./高数上学期/ --deck "考研::数学"`: directories
+  expand recursively into supported files; `node_modules`, hidden and dot dirs are
+  skipped, and an empty folder names itself in the error.
+- **Rate-limit backoff** — HTTP 429 now waits (Retry-After header, else
+  exponential) before retrying, with a third attempt reserved for it; non-429
+  failures keep the old two-attempt budget.
+- **`--max-total N`** — a global card cap, so one oversized folder cannot flood
+  a deck.
+
 ## [0.8.0] — 2026-09-25
 
 ### Added

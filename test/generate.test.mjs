@@ -71,6 +71,32 @@ describe('generateCards', () => {
     assert.equal(perChunk[0].generated, 1);
   });
 
+  test('429s back off and recover within the retry budget', async () => {
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls++;
+      if (calls < 3) {
+        return { ok: false, status: 429, headers: { get: () => '0.01' }, text: async () => 'slow down' };
+      }
+      return { ok: true, json: async () => ({ choices: [{ message: { content: '[{"front":"q","back":"a"}]' } }] }) };
+    };
+    const { perChunk } = await generateCards([chunks[0]], opts, { fetchImpl });
+    assert.equal(calls, 3, 'two 429s must consume the extra retry budget, then succeed');
+    assert.equal(perChunk[0].generated, 1);
+    assert.ok(!perChunk[0].error);
+  });
+
+  test('non-429 failures do not get the extra retry', async () => {
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls++;
+      return { ok: false, status: 500, headers: { get: () => null }, text: async () => 'boom' };
+    };
+    const { perChunk } = await generateCards([chunks[0]], opts, { fetchImpl });
+    assert.equal(calls, 3, 'three attempts total, none of them waits');
+    assert.match(perChunk[0].error, /500/);
+  });
+
   test('skips a chunk after retry instead of failing the whole run', async () => {
     const fetchImpl = async () => ({ ok: true, json: async () => ({ choices: [{ message: { content: 'nope' } }] }) });
     const { cards, perChunk } = await generateCards(chunks, opts, { fetchImpl });

@@ -1,6 +1,9 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseArgs, main, toArgv, wizard, DEFAULT_ANKI_URL } from '../src/cli.mjs';
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { parseArgs, main, toArgv, wizard, expandInputs, DEFAULT_ANKI_URL } from '../src/cli.mjs';
 import { applyProvider, PROVIDERS } from '../src/providers.mjs';
 
 describe('parseArgs', () => {
@@ -113,6 +116,42 @@ describe('wizard', () => {
     }
     assert.equal(typeof code, 'number', 'wizard must hand off to main and return its exit code');
     assert.ok(errs.some((e) => String(e).includes('ENOENT')), 'flow must reach file parsing');
+  });
+});
+
+describe('expandInputs (folder import)', () => {
+  test('expands directories recursively, skipping node_modules and hidden dirs', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'af-folders-'));
+    await mkdir(path.join(root, 'week1'), { recursive: true });
+    await mkdir(path.join(root, 'week2', 'sub'), { recursive: true });
+    await mkdir(path.join(root, 'node_modules', 'pkg'), { recursive: true });
+    await mkdir(path.join(root, '.hidden'), { recursive: true });
+    await writeFile(path.join(root, 'week1', 'a.md'), '# A\n' + 'x'.repeat(300));
+    await writeFile(path.join(root, 'week2', 'sub', 'b.txt'), 'hello world, enough text for parsing to be meaningful');
+    await writeFile(path.join(root, 'week2', 'skip.exe'), 'binary');
+    await writeFile(path.join(root, 'node_modules', 'pkg', 'c.md'), 'should be skipped');
+    await writeFile(path.join(root, '.hidden', 'd.md'), 'should be skipped');
+
+    const files = await expandInputs([root]);
+    const names = files.map((f) => path.relative(root, f)).sort();
+    assert.deepEqual(names, [path.join('week1', 'a.md'), path.join('week2', 'sub', 'b.txt')]);
+  });
+
+  test('plain files pass through untouched', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'af-folders-'));
+    const f = path.join(root, 'single.md');
+    await writeFile(f, '# S\n' + 'y'.repeat(300));
+    assert.deepEqual(await expandInputs([f]), [f]);
+  });
+
+  test('a directory with nothing importable says so with the folder name', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'af-folders-'));
+    await writeFile(path.join(root, 'only.exe'), 'binary');
+    await assert.rejects(expandInputs([root]), /contains no importable files/);
+  });
+
+  test('missing paths pass through for parseFile to report ENOENT', async () => {
+    assert.deepEqual(await expandInputs(['no-such-thing.md']), ['no-such-thing.md']);
   });
 });
 

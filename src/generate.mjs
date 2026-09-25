@@ -102,6 +102,8 @@ export function normalizeCards(rawCards, style = 'basic') {
   return { cards, dropped, duplicates };
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function chatOnce(baseUrl, apiKey, model, messages, fetchImpl) {
   const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
     method: 'POST',
@@ -110,7 +112,11 @@ async function chatOnce(baseUrl, apiKey, model, messages, fetchImpl) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => '');
-    throw new Error(`LLM API ${res.status}: ${body.slice(0, 300)}`);
+    const e = new Error(`LLM API ${res.status}: ${body.slice(0, 300)}`);
+    e.status = res.status;
+    const ra = Number(res.headers?.get?.('retry-after'));
+    e.retryAfterMs = Number.isFinite(ra) && ra > 0 ? ra * 1000 : undefined;
+    throw e;
   }
   const data = await res.json();
   return data?.choices?.[0]?.message?.content ?? '';
@@ -188,7 +194,10 @@ export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = n
     if (rawCards === null) {
       const prompt =
         `Material section${chunk.title ? ` ("${chunk.title}")` : ''}:\n\n${chunk.text}`;
-      for (let attempt = 0; attempt < 2 && rawCards === null; attempt++) {
+      // 3 attempts, not 2: the extra one exists for 429s, which need a wait
+      // before retrying and would otherwise burn the only retry on a request
+      // that was always going to fail immediately.
+      for (let attempt = 0; attempt < 3 && rawCards === null; attempt++) {
         try {
           const reply = await chatOnce(cfg.baseUrl, cfg.apiKey, cfg.model, [
             { role: 'system', content: systemPrompt },
@@ -198,6 +207,11 @@ export async function generateCards(chunks, opts, { fetchImpl = fetch, cache = n
           if (rawCards === null) lastError = new Error('model reply contained no JSON array');
         } catch (e) {
           lastError = e;
+          if (e.status === 429 && attempt < 2) {
+            // Rate limited: wait what the server asked for, else back off
+            // exponentially. Retrying instantly is guaranteed to 429 again.
+            await sleep(e.retryAfterMs ?? 1500 * 2 ** attempt);
+          }
         }
       }
       if (rawCards !== null && cache) cache.set(key, rawCards);
