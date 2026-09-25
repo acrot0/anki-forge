@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-09-25
+
+### Added
+
+- **Android app**: a real installable APK (WebView shell over the
+  experience page) with the file-chooser bridged to the system picker —
+  the import button works inside the app, localStorage study progress
+  survives restarts, external links hand off to the browser. Built by CI
+  (ubuntu runner ships the Android SDK), debug-signed for sideloading.
+- **Subject-colored chips** in the demo (blue/green/amber/violet/red per
+  subject) and teal accent bars on section labels.
+
+### Fixed
+
+- Android build needed gradle.properties (AndroidX) and
+  ComponentActivity (registerForActivityResult lives there).
+
 ## [0.21.0] — 2026-09-25
 
 ### Added
