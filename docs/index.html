@@ -6,159 +6,179 @@
 <title>anki-forge — 讲义变卡组</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js"></script>
-<meta name="theme-color" content="#f8fafc">
+<meta name="theme-color" content="#ffffff">
 <style>
+  /* shadcn/ui token：zinc 中性 + emerald 单一强调，克制密度 */
   :root {
-    --bg: #f5f7fa; --card: #ffffff; --ink: #1a2230; --sub: #5d6676; --faint: #8b94a3;
-    --line: #e2e7ee; --teal: #0d9488; --teal-d: #0f766e; --teal-bg: #e4f4f1;
-    --err: #dc2626;
+    --background: #ffffff; --foreground: #09090b;
+    --muted: #f4f4f5; --muted-fg: #71717a;
+    --border: #e4e4e7; --accent: #f4f4f5;
+    --primary: #059669; --primary-fg: #ffffff;
+    --ring: rgba(5,150,105,.25);
+    --destructive: #dc2626;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
   }
   * { box-sizing: border-box; margin: 0; }
-  @keyframes pageIn { from { opacity: 0; transform: translateX(46px) rotateY(-12deg); } to { opacity: 1; transform: none; } }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    background: var(--bg); color: var(--ink); min-height: 100vh; -webkit-font-smoothing: antialiased;
+    background: var(--muted); color: var(--foreground); min-height: 100vh;
+    font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased;
   }
-  .app { max-width: 520px; margin: 0 auto; min-height: 100vh; background: #ffffff;
-         box-shadow: 0 0 0 1px var(--line), 0 4px 24px rgba(16,24,40,.05); }
-  @media (min-width: 560px) { .app { margin-top: 20px; border-radius: 18px; } }
-  .appbar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0;
-    background: rgba(255,255,255,.92); backdrop-filter: blur(8px); z-index: 20; box-shadow: 0 1px 8px rgba(16,24,40,.04);
-  }
-  .appbar .brand { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 15.5px; }
-  .appbar .brand svg { width: 20px; height: 20px; stroke: var(--teal); fill: none; }
-  .appbar a { font-size: 12.5px; color: var(--teal); text-decoration: none; font-weight: 600; }
-  .body { padding: 14px 14px 40px; }
+  .app { max-width: 560px; margin: 0 auto; min-height: 100vh; background: var(--background);
+         box-shadow: 0 0 0 1px var(--border); }
+  @media (min-width: 600px) { .app { margin: 24px auto; border-radius: var(--radius); overflow: hidden; } }
 
-  .sec-label { font-size: 12px; font-weight: 700; color: var(--faint); letter-spacing: .6px; margin: 16px 0 8px; display: flex; align-items: center; gap: 7px; }
-  .sec-label::before { content: ""; width: 3px; height: 13px; border-radius: 2px; background: var(--teal); opacity: .7; }
+  .hd { display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .hd .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; }
+  .hd .brand svg { width: 18px; height: 18px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .hd a { font-size: 13px; color: var(--muted-fg); text-decoration: none; }
+  .hd a:hover { color: var(--foreground); }
+  .body { padding: 16px; }
+
+  .sec { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; margin-bottom: 10px; }
+  .sec .n { width: 20px; height: 20px; border-radius: 5px; background: var(--primary); color: var(--primary-fg);
+            font-size: 11px; font-weight: 600; display: grid; place-items: center; }
+  .sec svg { width: 15px; height: 15px; stroke: var(--muted-fg); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
   textarea {
-    width: 100%; min-height: 110px; border: 1.5px solid var(--line); border-radius: 12px;
-    padding: 11px 13px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
-    background: #fbfcfd; color: var(--ink); outline: none; transition: border-color .15s;
+    width: 100%; min-height: 104px; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; font-size: 13.5px; line-height: 1.6; font-family: inherit; resize: vertical;
+    background: var(--background); color: var(--foreground); outline: none; transition: border-color .15s;
   }
-  textarea:focus { border-color: var(--teal); }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-  .chip { border: 1px solid var(--line); background: #ffffff; color: var(--sub); cursor: pointer;
-          font-size: 12.5px; padding: 7px 12px; border-radius: 99px; transition: all .15s; }
-  .chip:active { transform: scale(.96); }
-  .chip.subj { background: var(--c1); color: var(--c2); border-color: transparent; font-weight: 600; }
-  .chip.subj:hover { filter: brightness(.96); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.08); }
+  textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+  textarea::placeholder { color: #a1a1aa; }
+
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .chip { border: 1px solid var(--border); background: var(--background); color: var(--muted-fg); cursor: pointer;
+          font-size: 13px; padding: 6px 12px; border-radius: var(--radius); transition: all .12s; }
+  .chip:hover { background: var(--accent); color: var(--foreground); }
+  .chip:active { transform: scale(.97); }
 
   .btn {
-    display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%;
-    border: 0; cursor: pointer; font-size: 14.5px; font-weight: 650; color: #fff; min-height: 46px;
-    background: linear-gradient(135deg, #0d9488, #0f766e); box-shadow: 0 2px 12px rgba(13,148,136,.25); border-radius: 12px; margin-top: 12px; box-shadow: 0 2px 10px rgba(13,148,136,.25); transition: background .15s, transform .1s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
+    border: 0; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--primary-fg); min-height: 40px;
+    background: var(--primary); border-radius: var(--radius); margin-top: 14px;
+    transition: background .15s, opacity .15s;
   }
-  .btn:active { transform: scale(.98); }
-  .btn.secondary { background: var(--teal-bg); color: var(--teal-d); width: auto; min-height: 38px; font-size: 13px; margin: 0; padding: 8px 16px; }
+  .btn:hover:not(:disabled) { background: var(--primary); opacity: .9; }
+  .btn:active:not(:disabled) { transform: scale(.99); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .btn.outline { background: var(--background); color: var(--foreground); border: 1px solid var(--border);
+                 box-shadow: var(--shadow-sm); width: auto; font-size: 13px; min-height: 36px; padding: 0 14px; margin: 0; }
+  .btn.outline:hover { background: var(--accent); }
 
-  .msg { margin: 10px 0 0; font-size: 13px; padding: 9px 12px; border-radius: 10px; display: none; }
-  .msg.err { display: block; background: #fef2f2; color: var(--err); }
-  .msg.ok { display: block; background: var(--teal-bg); color: var(--teal-d); }
+  .msg { margin: 10px 0 0; font-size: 13px; padding: 9px 12px; border-radius: var(--radius); display: none;
+         border: 1px solid; }
+  .msg.err { display: block; background: #fef2f2; border-color: #fecaca; color: var(--destructive); }
+  .msg.ok { display: block; background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
 
-  .search { position: relative; margin-top: 10px; }
-  .search input { width: 100%; border: 1.5px solid var(--line); border-radius: 11px; padding: 9px 12px 9px 36px;
-    font-size: 13.5px; background: #fbfcfd; color: var(--ink); outline: none; }
-  .search input:focus { border-color: var(--teal); }
-  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; stroke: var(--faint); fill: none; stroke-width: 2; }
-  .clist { display: flex; flex-direction: column; gap: 7px; margin-top: 10px; }
-  .citem { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #ffffff; transition: border-color .15s, box-shadow .15s; }
-  .citem:hover { border-color: rgba(13,148,136,.45); box-shadow: 0 2px 12px rgba(13,148,136,.10); }
-  .citem .qrow { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; cursor: pointer; }
-  .citem .qnum { flex-shrink: 0; width: 20px; height: 20px; border-radius: 6px; background: var(--teal-bg);
-    color: var(--teal-d); font-size: 11px; font-weight: 700; display: grid; place-items: center; margin-top: 1px; }
-  .citem .qtext { font-size: 13.5px; font-weight: 600; line-height: 1.5; flex: 1; }
-  .citem .atext { padding: 9px 12px 11px 40px; font-size: 13px; line-height: 1.6; color: var(--sub);
-    border-top: 1px dashed var(--line); display: none; }
-  .citem.open .atext { display: block; animation: fade .25s both; }
-  .citem .src { font-size: 11px; color: var(--faint); margin-top: 4px; }
+  .search { position: relative; margin-top: 12px; }
+  .search input { width: 100%; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px 8px 34px;
+    font-size: 13.5px; background: var(--background); color: var(--foreground); outline: none; }
+  .search input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
+  .search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px;
+    stroke: var(--muted-fg); fill: none; stroke-width: 2; stroke-linecap: round; }
+  .clist { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .citem { border: 1px solid var(--border); border-radius: var(--radius); background: var(--background); overflow: hidden; }
+  .citem .qrow { display: flex; align-items: center; gap: 9px; padding: 10px 12px; cursor: pointer; }
+  .citem .qnum { flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--primary); background: #ecfdf5;
+    border-radius: 5px; padding: 2px 7px; }
+  .citem .qtext { font-size: 13.5px; font-weight: 500; line-height: 1.45; flex: 1; }
+  .citem .chev { width: 14px; height: 14px; stroke: var(--muted-fg); fill: none; stroke-width: 2; transition: transform .2s; }
+  .citem.open .chev { transform: rotate(90deg); }
+  .citem .atext { padding: 9px 12px 10px 12px; font-size: 13px; line-height: 1.6; color: var(--muted-fg);
+    border-top: 1px solid var(--border); display: none; }
+  .citem.open .atext { display: block; animation: fade .2s both; }
   .citem.match-none { display: none; }
-  @keyframes fade { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
-  .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-  .count-row span { font-size: 12.5px; color: var(--sub); }
-  .empty { text-align: center; padding: 30px 10px; color: var(--faint); font-size: 13px; }
-  .hidden { display: none; }
-  #filechip { display: flex; align-items: center; gap: 8px; background: var(--teal-bg); border: 1px solid rgba(13,148,136,.3);
-    border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--teal-d); margin-top: 8px; }
-  #filechip .x { margin-left: auto; cursor: pointer; color: var(--err); font-weight: 700; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .count-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+  .count-row .cnt { font-size: 12.5px; color: var(--muted-fg); }
+  .empty { text-align: center; padding: 26px 10px; color: var(--muted-fg); font-size: 13px; }
 
-  .overlay { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: none; flex-direction: column; }
+  .overlay { position: fixed; inset: 0; z-index: 50; background: var(--background); display: none; flex-direction: column; }
   .overlay.on { display: flex; }
-  .obar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
-  .obar .x { border: 0; background: none; font-size: 15px; cursor: pointer; color: var(--sub); padding: 4px 8px; }
-  .obar .prog { flex: 1; height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
-  .obar .prog i { display: block; height: 100%; width: 0; background: var(--teal); border-radius: 99px; transition: width .3s; }
-  .obar .cnt { font-size: 12px; color: var(--sub); }
-  .ocard-area { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 16px; }
-  .ocard { background: #ffffff; border: 1px solid var(--line); border-radius: 16px; padding: 22px 18px;
-    min-height: 210px; display: flex; flex-direction: column; box-shadow: 0 2px 14px rgba(16,24,40,.06);
-    touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-  .ocard .tagline { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--teal); margin-bottom: 10px;
-    display: flex; justify-content: space-between; align-items: center; }
-  .ocard .qbig { font-size: 18px; font-weight: 650; line-height: 1.55; text-align: center; margin: auto 0; }
-  .ocard .abig { font-size: 15.5px; line-height: 1.65; color: var(--ink); }
-  .ocard .qkeep { font-size: 13px; font-weight: 600; color: var(--sub); border-bottom: 1px dashed var(--line);
-    padding-bottom: 10px; margin-bottom: 12px; line-height: 1.5; }
-  .ocard .src { font-size: 11.5px; color: var(--faint); margin-top: 12px; }
-  .ocard .speak-btn { border: 1px solid var(--line); background: #ffffff; border-radius: 99px; width: 34px; height: 34px;
-    display: grid; place-items: center; cursor: pointer; }
-  .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); }
-  .grades button { border: 1px solid var(--line); background: #ffffff; border-radius: 12px; padding: 11px 0;
-    font-size: 13px; font-weight: 650; cursor: pointer; color: var(--ink); }
-  .grades button small { display: block; font-size: 10.5px; font-weight: 400; color: var(--faint); margin-top: 2px; }
-  .grades .g1 { border-color: #fecaca; } .grades .g1:active { background: #fef2f2; }
-  .grades .g2 { border-color: #fde68a; } .grades .g2:active { background: #fffbeb; }
-  .grades .g3 { border-color: #99f6e4; } .grades .g3:active { background: var(--teal-bg); }
-  .grades .g4 { border-color: #bfdbfe; } .grades .g4:active { background: #eff6ff; }
-  .swipe-hint { text-align: center; font-size: 11.5px; color: var(--faint); padding-bottom: 10px; }
-  .done-box { text-align: center; padding: 40px 20px; }
-  .done-box .big { font-size: 22px; font-weight: 750; color: var(--teal); }
-  .done-box .sub { font-size: 13px; color: var(--sub); margin-top: 6px; line-height: 1.7; }
+  .obar { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .obar .x { border: 0; background: none; font-size: 14px; cursor: pointer; color: var(--muted-fg); padding: 4px 6px; }
+  .obar .x:hover { color: var(--foreground); }
+  .obar .prog { flex: 1; height: 4px; background: var(--muted); border-radius: 99px; overflow: hidden; }
+  .obar .prog i { display: block; height: 100%; width: 0; background: var(--primary); border-radius: 99px; transition: width .25s; }
+  .obar .cnt { font-size: 12px; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
+  .ocard-area { flex: 1; display: flex; flex-direction: column; padding: 20px 16px; max-width: 560px; margin: 0 auto; width: 100%; }
+  .ocard { flex: 1; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--background); padding: 22px 20px; user-select: none; -webkit-user-select: none;
+    touch-action: pan-y; box-shadow: var(--shadow-sm); }
+  .ocard .meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .ocard .meta .tag { font-size: 11px; font-weight: 600; color: var(--primary); background: #ecfdf5;
+    border-radius: 5px; padding: 2px 8px; }
+  .ocard .meta .speak { cursor: pointer; color: var(--muted-fg); }
+  .ocard .meta .speak svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+  .ocard .q { font-size: 17px; font-weight: 600; line-height: 1.55; text-align: center; margin: auto 0; }
+  .ocard .qkeep { font-size: 12.5px; font-weight: 500; color: var(--muted-fg); text-align: center;
+    border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 14px; line-height: 1.5; }
+  .ocard .a { font-size: 15px; line-height: 1.7; color: var(--foreground); text-align: center; }
+  .ocard .src { font-size: 11.5px; color: var(--muted-fg); margin-top: 10px; }
+  .ocard .hint { text-align: center; font-size: 11.5px; color: #a1a1aa; margin-top: auto; padding-top: 14px; }
+  .grades { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 14px 0 4px; }
+  .grades button { border: 1px solid var(--border); background: var(--background); border-radius: var(--radius);
+    padding: 10px 0; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--foreground); transition: all .12s; }
+  .grades button small { display: block; font-size: 10px; font-weight: 400; color: var(--muted-fg); margin-top: 1px; }
+  .grades button:hover { transform: translateY(-1px); }
+  .grades .g1 { color: var(--destructive); } .grades .g1:hover { background: #fef2f2; border-color: #fecaca; }
+  .grades .g2 { color: #d97706; } .grades .g2:hover { background: #fffbeb; border-color: #fde68a; }
+  .grades .g3 { color: var(--primary); } .grades .g3:hover { background: #ecfdf5; border-color: #a7f3d0; }
+  .grades .g4 { color: #2563eb; } .grades .g4:hover { background: #eff6ff; border-color: #bfdbfe; }
+  .done-box { text-align: center; padding: 36px 16px; }
+  .done-box .big { font-size: 19px; font-weight: 650; color: var(--primary); }
+  .done-box .sub { font-size: 13px; color: var(--muted-fg); margin-top: 8px; line-height: 1.8; }
+  .fade-in { animation: fade .25s both; }
 </style>
 </head>
 <body>
 <div class="app">
-  <div class="appbar">
+  <div class="hd">
     <div class="brand">
-      <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 7h7"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/><path d="M9 7h7"/></svg>
       anki-forge
     </div>
     <a href="https://github.com/acrot0/anki-forge" target="_blank">PC 版下载</a>
   </div>
 
   <div class="body">
-      <div class="sec-label">导入材料（Word / TXT / MD / 粘贴文本，本地处理）</div>
-    <input type="file" id="fileinput" accept=".docx,.pdf,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp" class="hidden">
-    <button class="btn secondary" id="filebtn" style="margin-top:0">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
-      选择文件（Word / TXT / MD）
-    </button>
-    <div id="filechip" style="display:none"></div>
-    <textarea id="text" placeholder="…或直接粘贴讲义文本。支持句式：X 是 Y / X 包括 A、B / A 导致 B / 数字年代事实"></textarea>
-    <div class="chips" id="demos">
-      <button class="chip subj" data-demo="words" style="--c1:#eff6ff;--c2:#1d4ed8">📚 考研英语词表</button>
-      <button class="chip subj" data-demo="bio" style="--c1:#ecfdf5;--c2:#047857">🧬 生物·细胞</button>
-      <button class="chip subj" data-demo="hist" style="--c1:#fffbeb;--c2:#b45309">📜 中国近代史</button>
-      <button class="chip subj" data-demo="cs" style="--c1:#f5f3ff;--c2:#6d28d9">💻 计算机网络</button>
-      <button class="chip subj" data-demo="med" style="--c1:#fef2f2;--c2:#b91c1c">🏥 医学·免疫</button>
+    <div class="sec"><span class="n">1</span><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>导入材料</div>
+    <div class="row" style="margin-top:0">
+      <button class="btn outline" id="filebtn">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg>
+        选择文件
+      </button>
+      <span style="font-size:12px;color:var(--muted-fg)">Word · TXT · MD · PDF · 图片（OCR）</span>
+      <input type="file" id="fileinput" accept=".docx,.pdf,.md,.markdown,.txt,.png,.jpg,.jpeg,.webp" style="display:none">
+    </div>
+    <div id="filechip"></div>
+    <div class="sec" style="margin-top:14px"><span class="n">2</span>或粘贴文本</div>
+    <textarea id="text" placeholder="粘贴讲义片段，支持句式：X 是 Y / X 包括 A、B / A 导致 B / 数字年代事实"></textarea>
+    <div class="row" id="demos">
+      <button class="chip" data-demo="words">考研英语词表</button>
+      <button class="chip" data-demo="bio">生物·细胞</button>
+      <button class="chip" data-demo="hist">中国近代史</button>
+      <button class="chip" data-demo="cs">计算机网络</button>
+      <button class="chip" data-demo="med">医学·免疫</button>
     </div>
     <button class="btn" id="go">
-      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      <svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
       生成卡片
     </button>
     <div class="msg" id="msg"></div>
 
     <div id="listwrap" style="display:none">
-      <div class="sec-label" style="margin-top:20px">卡片列表</div>
+      <div class="sec" style="margin-top:16px"><span class="n">3</span>卡片列表</div>
       <div class="search">
-        <svg viewBox="0 0 24 24" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <input id="search" placeholder="搜索问题或答案…">
       </div>
-      <div class="count-row"><span id="count"></span><button class="btn secondary" id="study-go">▶ 开始学习</button></div>
+      <div class="count-row"><span class="cnt" id="count"></span><button class="btn outline" id="study-go">开始学习</button></div>
       <div class="clist" id="clist"></div>
     </div>
   </div>
@@ -173,21 +193,24 @@
   <div class="ocard-area">
     <div class="ocard" id="ocard">
       <div id="ofront-side">
-        <div class="tagline"><span id="otag">新卡片</span><span id="ospeak" style="display:none;cursor:pointer" title="发音">🔊</span></div>
-        <div class="qbig" id="oq"></div>
+        <div class="meta"><span class="tag" id="otag">新卡片</span><span class="speak" id="ospeak" title="发音" onclick="event.stopPropagation();speak($('oq').textContent)"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg></span></div>
+        <div class="q" id="oq" onclick="showBack()"></div>
+        <div class="hint">点击卡片或按空格显示答案</div>
       </div>
       <div id="oback-side" style="display:none">
         <div class="qkeep" id="oqkeep"></div>
-        <div class="abig" id="oa"></div>
+        <div class="a" id="oa"></div>
         <div class="src" id="osrc"></div>
       </div>
     </div>
-    <div class="swipe-hint" id="ohint">← 左滑标忘 · 右滑记住 · 点卡片翻面 →</div>
     <div class="grades" id="grades">
       <button class="g1" onclick="grade(1)">忘记<small>1</small></button>
       <button class="g2" onclick="grade(2)">困难<small>2</small></button>
       <button class="g3" onclick="grade(3)">良好<small>3</small></button>
       <button class="g4" onclick="grade(4)">简单<small>4</small></button>
+    </div>
+    <div class="hint" style="text-align:center;font-size:11.5px;color:#a1a1aa;padding-top:8px" id="swipe-hint">
+      ← 左滑标忘 · 右滑记住 →（也可点卡片翻面）
     </div>
   </div>
 </div>
@@ -219,11 +242,20 @@ const DEMOS = {
   cs: 'TCP 是一种面向连接的可靠传输协议。UDP 是一种无连接的不可靠传输协议。\nHTTP 的常见状态码包括 200、301、404 和 500。\nDNS 的作用是将域名解析为 IP 地址。\n三次握手是 TCP 建立连接的过程。包丢失会导致数据传输不完整。\nHTTPS 是在 HTTP 基础上加入 TLS 加密层的协议。',
   med: '免疫系统是人体抵御病原体的防御体系。抗原是指能够触发免疫应答的物质。\n抗体包括 IgG、IgA、IgM、IgE 和 IgD 五类。\n炎症反应会导致局部红肿热痛。疫苗通过诱导机体产生抗体和记忆细胞来提供保护。\n过敏反应是免疫系统对无害物质的过度应答。',
 };
-// ---- 智能文件导入：编码检测 + PDF + OCR + Word ----
+$('demos').onclick = (e) => {
+  const d = e.target.dataset.demo; if (!d) return;
+  if (d === 'words') {
+    $('text').value = DEMOS.words.map(([w, def, ex]) => w + ' ' + def + '。例：' + ex).join('\n');
+  } else {
+    $('text').value = DEMOS[d];
+  }
+  generate();
+};
+
+// ---- 智能文件导入（编码检测 / Word / PDF / 图片 OCR）----
 function decodeXmlEntities(s) {
   return s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
 }
-// 编码自动检测：UTF-8 解出替换字符即按 GBK 重解码，防中文乱码
 function readTextSmart(buf) {
   let text = new TextDecoder('utf-8').decode(buf);
   const bad = (text.match(/\uFFFD/g) || []).length;
@@ -236,13 +268,13 @@ function readTextSmart(buf) {
 function parseDocxBrowser(arrayBuf) {
   const zip = fflate.unzipSync(new Uint8Array(arrayBuf));
   const xmlEntry = Object.keys(zip).find((k) => k === 'word/document.xml');
-  if (!xmlEntry) throw new Error('不是有效的 .docx 文件（缺少 word/document.xml）');
+  if (!xmlEntry) throw new Error('不是有效的 .docx 文件');
   const xml = new TextDecoder().decode(zip[xmlEntry]);
-  const paras = [...xml.matchAll(/<w:p[ >](["\s\S"]*?)<\/w:p>/g)]
-    .map((m) => [...m[1].matchAll(/<w:t[^>]*>(["\s\S"]*?)<\/w:t>/g)]
+  const paras = [...xml.matchAll(/<w:p[ >]([\s\S]*?)<\/w:p>/g)]
+    .map((m) => [...m[1].matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)]
       .map((t) => decodeXmlEntities(t[1].replace(/\s+/g, ' '))).join(''))
     .map((p) => p.trim()).filter(Boolean);
-  if (paras.join('').length < 20) throw new Error('Word 文档几乎没有文字——扫描图片请改导入图片（自动 OCR）');
+  if (paras.join('').length < 20) throw new Error('Word 文档几乎没有文字——扫描图片请导入图片（自动 OCR）');
   return paras.join('\n');
 }
 async function parsePdfBrowser(arrayBuf) {
@@ -258,9 +290,7 @@ async function parsePdfBrowser(arrayBuf) {
     if (line) parts.push('【第' + p + '页】' + line);
   }
   const text = parts.join('\n');
-  if (text.replace(/【[^】]*】/g, '').trim().length < 20) {
-    throw new Error('PDF 没有可用文字层——扫描版请截图后导入图片（自动 OCR）');
-  }
+  if (text.replace(/【[^】]*】/g, '').trim().length < 20) throw new Error('PDF 没有文字层——扫描版请导入图片（自动 OCR）');
   return text;
 }
 async function ocrImageBrowser(arrayBuf) {
@@ -290,7 +320,7 @@ async function smartReadFile(f) {
   if (ext === 'docx') return parseDocxBrowser(buf);
   if (ext === 'pdf') return parsePdfBrowser(buf);
   if (['png', 'jpg', 'jpeg', 'webp', 'bmp'].includes(ext)) {
-    msg('正在 OCR 识别图片文字（首次使用会下载识别模型）…');
+    msg('正在 OCR 识别图片文字（首次会下载识别模型）…');
     return ocrImageBrowser(buf);
   }
   return readTextSmart(buf);
@@ -304,28 +334,11 @@ $('fileinput').onchange = async (e) => {
     const text = await smartReadFile(f);
     if (!text.trim()) throw new Error('文件内容为空');
     $('text').value = text;
-    $('filechip').style.display = 'flex';
-    $('filechip').innerHTML = '<span>📄 ' + esc(f.name) + '（' + (f.size / 1024).toFixed(0) + ' KB）— 已载入并自动识别</span><span class="x" onclick="clearFile()">✕</span>';
+    msg('✓ 已载入 ' + f.name + '，点「生成卡片」');
     generate();
-  } catch (err) {
-    $('filechip').style.display = 'flex';
-    $('filechip').innerHTML = '<span style="color:var(--err)">' + esc(err.message) + '</span>';
-  }
+  } catch (err) { msg(err.message, true); }
 };
-function clearFile() {
-  $('fileinput').value = '';
-  $('filechip').style.display = 'none';
-  $('text').value = '';
-}
-$('demos').onclick = (e) => {
-  const d = e.target.dataset.demo; if (!d) return;
-  if (d === 'words') {
-    $('text').value = DEMOS.words.map(([w, def, ex]) => w + ' ' + def + '。例：' + ex).join('\n');
-  } else {
-    $('text').value = DEMOS[d];
-  }
-  generate();
-};
+function clearFile() { $('fileinput').value = ''; $('text').value = ''; }
 
 function sentences(text) {
   return text.replace(/([。！？!?；;])\s*/g, '$1\n').split(/\n+/)
@@ -365,7 +378,6 @@ function generate() {
   if (!text) return msg('先粘贴材料，或点上方示例', true);
   const lines = text.split(/\n+/).filter((l) => l.trim());
   const wordLines = lines.filter((l) => /^[a-zA-Z][\w'-]*\s/.test(l.trim())).length;
-  // 智能识别：超过 60% 的行是「单词+释义」格式 → 词表模式
   const isWords = lines.length > 0 && wordLines / lines.length > 0.6;
   CARDS = isWords
     ? text.split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => {
@@ -374,7 +386,7 @@ function generate() {
       }).filter(Boolean)
     : extractCards(text, 60);
   if (CARDS.length === 0) return msg('没能抽出卡片——需要「X 是 Y」「X 包括…」「A 导致 B」或词表行', true);
-  msg('✓ 生成 ' + CARDS.length + ' 张卡片。点击问题看答案；点「开始学习」进入复习模式。');
+  msg('✓ 生成 ' + CARDS.length + ' 张卡片。点击问题看答案，或开始学习。');
   $('search').value = '';
   renderList('');
   $('listwrap').style.display = 'block';
@@ -391,7 +403,8 @@ function renderList(q) {
         const i = CARDS.indexOf(c);
         return '<div class="citem" data-i="' + i + '">' +
           '<div class="qrow" onclick="this.parentElement.classList.toggle(\'open\')">' +
-          '<div class="qnum">' + (i + 1) + '</div><div class="qtext">' + esc(c.front) + '</div></div>' +
+          '<span class="qnum">' + (i + 1) + '</span><div class="qtext">' + esc(c.front) + '</div>' +
+          '<svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div>' +
           '<div class="atext">' + esc(c.back).replace(/\n/g, '<br>') +
           (c.source ? '<div class="src">📍 ' + esc(c.source) + '</div>' : '') + '</div></div>';
       }).join('');
@@ -421,9 +434,10 @@ function renderStudy() {
   if (STUDY.index >= STUDY.queue.length) {
     const acc = STUDY.done ? Math.round((STUDY.done - STUDY.again) / STUDY.done * 100) : 100;
     $('ocard').innerHTML = '<div class="done-box"><div class="big">本轮完成</div>' +
-      '<div class="sub">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 正确率 ' + acc + '%<br>标忘的卡会更快回来。进度已保存。</div></div>';
+      '<div class="sub">复习 ' + STUDY.done + ' 张 · 标忘 ' + STUDY.again + ' 张 · 正确率 ' + acc + '%<br>标忘的卡会更快回来。进度已保存。</div>' +
+      '<button class="btn" style="margin:16px auto 0;width:auto;padding:0 18px;min-height:38px" onclick="location.reload()">再学一轮</button></div>';
     $('grades').style.display = 'none';
-    $('ohint').textContent = '退出后可再次「开始学习」继续。';
+    $('swipe-hint').textContent = '';
     $('ocount').textContent = '';
     return;
   }
@@ -431,18 +445,17 @@ function renderStudy() {
   $('ofront-side').style.display = 'block';
   $('oback-side').style.display = 'none';
   $('grades').style.display = 'none';
-  $('ohint').style.display = 'block';
+  $('swipe-hint').style.display = 'block';
   $('otag').textContent = c.state === 0 ? '新卡片' : '复习 · 第 ' + (c.reps + 1) + ' 次';
   $('oq').textContent = c.front;
   $('oqkeep').textContent = c.front;
   $('oa').textContent = c.back || '（无补充）';
   $('osrc').textContent = c.source ? '📍 ' + c.source : '';
-  $('ospeak').style.display = /[a-zA-Z]{3,}/.test(c.front) ? 'inline-block' : 'none';
+  $('ospeak').style.display = /[a-zA-Z]{3,}/.test(c.front) ? 'inline-flex' : 'none';
   $('ocard').style.transform = '';
-  $('ocard').parentElement.style.perspective = '1200px';
   $('ocard').style.animation = 'none';
   void $('ocard').offsetHeight;
-  $('ocard').style.animation = 'pageIn .42s cubic-bezier(.16,1,.3,1)';
+  $('ocard').style.animation = 'fade .25s both';
   $('oprogress').style.width = Math.round(STUDY.index / STUDY.queue.length * 100) + '%';
   $('ocount').textContent = (STUDY.index + 1) + '/' + STUDY.queue.length;
 }
@@ -450,7 +463,7 @@ function showBack() {
   $('ofront-side').style.display = 'none';
   $('oback-side').style.display = 'block';
   $('grades').style.display = 'grid';
-  $('ohint').style.display = 'none';
+  $('swipe-hint').style.display = 'none';
 }
 $('ocard').onclick = () => {
   if ($('oback-side').style.display !== 'block') showBack();
@@ -482,6 +495,7 @@ async function grade(rating) {
   renderStudy();
 }
 
+// 滑动评分（pointer 统一触摸/鼠标）
 (function attachSwipe() {
   const card = $('ocard');
   let startX = null, dx = 0;
@@ -492,15 +506,15 @@ async function grade(rating) {
   card.addEventListener('pointermove', (e) => {
     if (startX === null) return;
     dx = e.clientX - startX;
-    card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.05 + 'deg)';
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + dx * 0.04 + 'deg)';
   });
   card.addEventListener('pointerup', (e) => {
     if (startX === null) return;
     card.style.transition = 'transform .25s';
     if (Math.abs(dx) > 90) {
       const dir = dx > 0 ? 1 : -1;
-      card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 25 + 'deg)';
-      setTimeout(() => { card.style.transform = ''; grade(dir > 0 ? 3 : 1); }, 180);
+      card.style.transform = 'translateX(' + dir * 480 + 'px) rotate(' + dir * 22 + 'deg)';
+      setTimeout(() => { card.style.transform = ''; grade(dir > 0 ? 3 : 1); }, 160);
     } else {
       card.style.transform = '';
     }

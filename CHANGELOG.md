@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-09-25
+
+### Fixed
+
+- **The page-wide interaction death**: the demo script assigned onclick to
+  `#demos` — an id that no longer existed after the mobile-first rewrite —
+  and the resulting TypeError killed every handler bound after it
+  (generate, search, study). The page *looked* alive but nothing worked.
+  Found by replaying the page script and walking the bindings one by one.
+  Verified end-to-end at 375px: generate → list → study → flip → grade.
+
 ## [0.22.0] — 2026-09-25
 
 ### Added
