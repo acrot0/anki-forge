@@ -5,6 +5,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.15.0] — 2026-09-25
+
+### Added
+
+- **Study mode with FSRS** — the actual learning loop, in-app: flip cards,
+  rate 忘记/困难/良好/简单, and the ts-fsrs scheduler (MIT) decides when each
+  card comes back. Progress persists per deck in ~/.anki-forge/study/, so
+  re-generating material never resets your history.
+- **Education visual language** for the full UI: light slate canvas, teal
+  accent, inline SVG icons instead of emoji, tighter information density —
+  built for daytime reading like Anki/Quizlet, not the generic AI-purple look.
+- New study API: /api/study/start, /review, /queue.
+
 ## [0.14.0] — 2026-09-25
 
 ### Changed

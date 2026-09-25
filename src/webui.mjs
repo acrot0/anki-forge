@@ -15,6 +15,7 @@ import { parseBuffer } from './parse.mjs';
 import { generateCards } from './generate.mjs';
 import { generateLocal } from './local-engine.mjs';
 import { loadCache } from './cache.mjs';
+import { startStudy, getQueue, gradeCard } from './study.mjs';
 import { writeApkgBytes } from './apkg.mjs';
 import { checkConnection, addCards } from './anki.mjs';
 import { PROVIDERS, applyProvider } from './providers.mjs';
@@ -85,6 +86,22 @@ async function handle(req, res) {
       } catch (e) {
         return json(res, 200, { ok: false, error: e.message });
       }
+    }
+    if (req.method === 'POST' && url.pathname === '/api/study/start') {
+      const { jobId } = JSON.parse((await readBody(req)).toString('utf8'));
+      const job = jobs.get(jobId);
+      if (!job?.cards?.length) throw new Error('no cards to study — generate first');
+      return json(res, 200, await startStudy(job.deck, job.cards));
+    }
+    if (req.method === 'GET' && url.pathname === '/api/study/queue') {
+      const deck = url.searchParams.get('deck');
+      if (!deck) throw new Error('deck is required');
+      return json(res, 200, await getQueue(deck));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/study/review') {
+      const { deck, front, rating } = JSON.parse((await readBody(req)).toString('utf8'));
+      if (!deck || !front) throw new Error('deck and front are required');
+      return json(res, 200, await gradeCard(deck, front, Number(rating)));
     }
     if (req.method === 'POST' && url.pathname === '/api/generate') {
       const body = JSON.parse((await readBody(req)).toString('utf8'));
